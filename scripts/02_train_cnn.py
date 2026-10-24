@@ -26,7 +26,7 @@ def train_lopo():
         print(f"Error: Could not find {metadata_path}. Please download it from Google Drive.")
         return
 
-    patients = ['chb01', 'chb02']
+    patients = MODEL_CONFIG.valid_patients
 
     for test_patient in patients:
         print(f"\n{'='*40}\nStarting LOPO fold: Test Patient {test_patient}\n{'='*40}")
@@ -51,7 +51,7 @@ def train_lopo():
         criterion = nn.BCEWithLogitsLoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=MODEL_CONFIG.lr, weight_decay=MODEL_CONFIG.weight_decay)
 
-        for epoch in range(1):
+        for epoch in range(MODEL_CONFIG.epochs):
             model.train()
             running_loss = 0.0
             
