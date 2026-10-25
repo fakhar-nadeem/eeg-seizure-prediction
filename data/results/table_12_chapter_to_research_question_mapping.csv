@@ -1,0 +1,11 @@
+Chapter / section,Main purpose,Mapped research question(s)
+Chapter 1 - Introduction,"Introduces the seizure prediction problem, motivation, and research gap",All RQs introduced
+Chapter 2 - Literature Review,"Reviews patient-specific vs patient-independent prediction, cross-dataset generalisation, and prior seizure prediction methods","RQ1, RQ2, RQ3"
+Chapter 3 - Methodology,"Defines datasets, preprocessing, harmonisation, feature extraction, models, and evaluation metrics","RQ1, RQ2, RQ3"
+Chapter 4 - CHB-MIT within-dataset results,Reports baseline and CNN patient-independent performance on CHB-MIT,RQ1
+Chapter 4 - Patient-specific sanity check,Shows upper-bound performance under same-patient training/testing,RQ1
+Chapter 5 - CHB→Siena transfer results,Evaluates zero-shot external transfer from CHB-MIT to Siena,RQ2
+Chapter 5 - Siena fine-tuning results,Assesses whether limited target-domain adaptation improves external performance,RQ2
+Chapter 5 - Event-level analysis,Examines event sensitivity and approximate false positive burden,RQ3
+Chapter 6 - Discussion,"Interprets patient heterogeneity, dataset shift, threshold effects, and practical limitations","RQ1, RQ2, RQ3"
+Chapter 7 - Conclusion,Summarises the main findings and implications for future seizure prediction systems,All RQs answered

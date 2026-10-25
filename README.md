@@ -15,6 +15,18 @@ Unlike many academic studies that evaluate on heavily overlapping patient-specif
 * **Domain Harmonization:** Standardized varying sampling rates (256 Hz vs 512 Hz) and mapped disparate 10-20 electrode configurations into a unified 16-channel input space[cite: 1].
 * **Rigorous Evaluation:** Bounded class imbalance (max 80 interictal windows per file) and enforced a strict 2-hour interictal exclusion zone to prevent data leakage[cite: 1].
 
+## 📊 Key Findings & Visualizations
+
+### 1. Patient-Independent Generalization
+The 1D-CNN outperformed traditional statistical baselines (Logistic Regression, Random Forest) across LOPO cross-validation folds, demonstrating stronger generalized feature extraction.
+
+![CHB Generalization](assets/chb_generalization.png)
+
+### 2. Cross-Dataset Domain Shift & Recovery (Siena Scalp EEG)
+Zero-shot transfer to an unseen clinical dataset resulted in an expected performance drop. However, fine-tuning on a small target-domain holdout significantly recovered predictive power.
+
+![Domain Shift Recovery](assets/domain_shift_recovery.png)
+
 ## 🏗️ Repository Architecture
 
 ```text
@@ -31,4 +43,6 @@ eeg-seizure-prediction/
 │   ├── 01_preprocess.py       
 │   └── 02_train_cnn.py        
 ├── requirements.txt           [cite: 1]
-└── README.md                  [cite: 1]"# eeg-seizure-prediction" 
+└── README.md                  [cite: 1]
+
+Note: Due to GitHub file size limits, the processed .npz EEG chunks are not included in this repository. To run the training pipeline locally, please download the raw CHB-MIT dataset from PhysioNet and run scripts/01_preprocess.py to generate the local chunk cache.

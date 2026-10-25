@@ -1,0 +1,20 @@
+Parameter,Value
+CHB-MIT base data directory,/content/drive/MyDrive/EEG_DATA/chbmit/physionet.org/files/chbmit/1.0.0
+Siena base data directory,/content/drive/MyDrive/EEG_DATA/siena-scalp-eeg/physionet.org/files/siena-scalp-eeg/1.0.0
+Project directory,/content/drive/MyDrive/eeg_seizure_prediction_project
+Chunk directory,/content/drive/MyDrive/eeg_seizure_prediction_project/processed/chunks
+Feature directory,/content/drive/MyDrive/eeg_seizure_prediction_project/features
+Results directory,/content/drive/MyDrive/eeg_seizure_prediction_project/results
+Model directory,/content/drive/MyDrive/eeg_seizure_prediction_project/models
+Target sampling frequency,256
+Window length (s),30
+Window overlap,0.5
+Preictal start (min),30
+Preictal end (min),5
+Interictal exclusion interval (h),2
+Max interictal windows per file,80
+Final common channels,16
+Overwrite chunks flag,False
+Rebuild features flag,False
+CNN reporting thresholds,0.5 and 0.1
+RF reporting threshold,0.1

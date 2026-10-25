@@ -1,0 +1,3 @@
+Dataset,Patients/modelled cohort,Windows,Interictal windows,Preictal windows,Feature dimension,Target sampling rate (Hz),Window length (s),Overlap,Final channels
+CHB-MIT,10,28025,26283,1742,144,256,30,0.5,16
+Siena,8,3122,763,2359,144,256,30,0.5,16

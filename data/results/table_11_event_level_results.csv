@@ -1,0 +1,5 @@
+model,event_sensitivity,approx_false_positive_burden_per_hour
+LR CHB→Siena,1.0,239.37090432503277
+RF CHB→Siena (0.1),1.0,234.33813892529488
+CNN CHB→Siena (0.1),0.9583333333333334,141.8610747051114
+CNN CHB→Siena fine-tuned (0.1),1.0,170.5785123966942
