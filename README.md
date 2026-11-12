@@ -1,6 +1,8 @@
 # Generalising EEG-Based Seizure Prediction 
 **A Cross-Patient and Cross-Dataset Study Using CHB-MIT and Siena Scalp EEG**
 
+🚀 **[View Live Interactive Dashboard](https://eeg-seizure-prediction.streamlit.app/)**
+
 ![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![PyTorch](https://img.shields.io/badge/PyTorch-1.12%2B-ee4c2c)
 ![MNE](https://img.shields.io/badge/MNE--Python-1.0%2B-green)
