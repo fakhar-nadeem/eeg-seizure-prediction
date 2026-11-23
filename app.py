@@ -104,60 +104,117 @@ if page == "0. Start Here: The Story":
 # =========================================================
 # PAGE 1: ARCHITECTURE & METHODOLOGY
 # =========================================================
-elif page == "1. How the Data & Model Work":
-    st.header("1. Turning Raw Brainwaves into Early Warnings")
-    st.write("Before training any model, raw hospital EEG recordings must be cleaned, sliced into time windows, and standardized so two completely different hospitals speak the same data language.")
+# =========================================================
+    # STEP A: DEFINING THE WARNING ZONE (FIGURE 1 & FIGURE 4)
+    # =========================================================
+    st.subheader("Step A: Defining the Early Warning Zone & Slicing the Signal")
+    st.write("Before training any model, we must teach it which parts of a patient's brainwave recording count as 'normal', which parts count as an 'impending seizure warning', and which parts must be thrown away.")
 
-    # Figure 1 & 4
-    st.subheader("Step A: Defining the Warning Zone (Labelling)")
+    # --- FIGURE 1 ROW ---
+    st.markdown("#### 1. How a Patient's Timeline is Divided (`Figure 1`)")
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_01_eeg_phase_timeline.png", "How continuous EEG recordings are divided into brain states")
-        show_image("figure_04_windowing_labelling.png", "Sliding 30-second windows with 50% overlap")
+        show_image("figure_01_eeg_phase_timeline.png", "Figure 1: The five clinical phases around an epileptic seizure")
     with col2:
         st.info("""
-        **What you're looking at:**
-        * **Preictal (Target = 1):** We label brainwaves **30 to 5 minutes before** a seizure as our warning zone.
-        * **5-Minute Buffer:** We exclude the final 5 minutes right before onset so the model learns *early* warning signs rather than the seizure itself.
-        * **Interictal (Target = 0):** Normal baseline recordings separated by at least 2 hours from any seizure to prevent data leakage.
-        * **30s Windows:** Signals are sliced into overlapping 30-second clips (15-second step) to capture temporal dynamics.
+        **How to read this diagram (Left → Right):**
+        * **What do the numbers `0` to `7` mean?** They are an **illustrative timeline** (not drawn to literal minute scale) showing the order of brain states from left to right. There is no vertical axis because this is a single timeline bar.
+        * 🟦 **Blue (`0` to `2`) — Inter-ictal (`Label = 0`):** Normal, everyday brain activity recorded **at least 2 hours away** from any seizure. Kept as our "safe" baseline.
+        * 🟧 **Orange (`2` to `4.5`) — Pre-ictal (`Label = 1`):** The **30 to 5 minute window before a seizure**. This 25-minute stretch is our target early-warning zone.
+        * 🟩 **Green (`4.5` to `5`) — Excluded Buffer:** The final **5 minutes** right before the seizure starts. Thrown away so the model learns *early* warning signs rather than cheating by detecting the seizure starting.
+        * 🟥 **Red (`5` to `5.8`) — Ictal:** The actual seizure happening in real time. Thrown away (detecting an active seizure is too late to warn the patient).
+        * 🟪 **Purple (`5.8` to `7`) — Post-ictal:** Recovery brainwaves right after a seizure ends. Thrown away so tired/recovering brainwaves aren't mistaken for normal baseline.
         """)
 
     st.markdown("---")
 
-    # Figure 3 & 5
-    st.subheader("Step B: Harmonizing Two Different Hospitals")
+    # --- FIGURE 4 ROW ---
+    st.markdown("#### 2. Slicing Continuous Brainwaves into Overlapping Clips (`Figure 4`)")
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_03_preprocessing_pipeline.png", "End-to-end memory-safe signal processing pipeline")
-        show_image("figure_05_channel_harmonisation.png", "Mapping CHB-MIT and Siena montages into 16 shared channels")
+        show_image("figure_04_windowing_labelling.png", "Figure 4: Sliding overlapping windows across the timeline")
     with col2:
         st.info("""
-        **Why this matters:**
-        * Boston (**CHB-MIT**) recorded at **256 Hz** using bipolar channels.
-        * Italy (**Siena**) recorded at **512 Hz** using referential electrodes.
-        * We resampled everything to **256 Hz**, applied a **0.5–40 Hz bandpass filter** to strip electrical noise, and mapped both hospitals onto **16 identical bipolar channels**.
-        * Processed arrays were cached as `.npz` chunks to prevent Out-Of-Memory crashes.
+        **How to read every part of this diagram:**
+        * **Horizontal Axis (`0` to `200`):** Time moving forward in minutes (illustrative scale).
+        * **Vertical Dashed Line (`x = 180`):** **Seizure Onset**—the exact moment the seizure begins.
+        * **Light-Blue Shaded Band (`x = 120` to `150`):** **Pre-ictal Warning Zone**—a 30-minute illustrative warning window ending well before onset at `180` (in our real pipeline, this zone is **30 to 5 minutes** before onset).
+        * **White Gap (`x = 150` to `180`):** The **excluded buffer zone** right before the seizure—any clip falling here is discarded.
+        * **Why does the horizontal bar change colors?** Each colored block represents one **sliding time window** (`30 seconds` in our real model). Because each new window slides forward by only **half a window (`15 seconds` / 50% overlap)**, each color transition shows where the next overlapping clip begins.
+        * **How clips get labeled:** Clips inside the light-blue shaded zone (olive & cyan segments) are labeled **`1` (Warning)**. Clips far to the left (at least 2 hours away in real data) are labeled **`0` (Normal)**. Clips touching the buffer or dashed seizure line (far right) are dropped.
         """)
 
     st.markdown("---")
 
-    # Figure 8 & Table 3
-    st.subheader("Step C: The 1D-CNN Architecture")
+    # =========================================================
+    # STEP B: HARMONIZING TWO DIFFERENT HOSPITALS (FIGURE 3 & 5)
+    # =========================================================
+    st.subheader("Step B: Cleaning & Standardizing Two Different Hospitals")
+    st.write("Hospital EEG files are huge, noisy, and recorded differently depending on the country and equipment. Before any AI model can learn from them, every recording passes through an automated assembly line.")
+
+    # --- FIGURE 3 ROW ---
+    st.markdown("#### 1. The 7-Step Signal Assembly Line (`Figure 3`)")
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_08_cnn_architecture.png", "1D Convolutional Neural Network processing raw 16-channel waveforms")
+        show_image("figure_03_preprocessing_pipeline.png", "Figure 3: Step-by-step pipeline from raw hospital files to model-ready data")
+    with col2:
+        st.info("""
+        **How to read this diagram (Follow the arrows Left → Right):**
+        * *(Note: There are no numbers or axes here—each blue box is one processing stage in chronological order.)*
+        * **Box 1 — Raw EDF loading:** Opens the raw hospital brainwave recordings (stored in **EDF**, the standard medical file format for EEG).
+        * **Box 2 — Channel cleaning / harmonisation:** Strips out non-brain sensors (like heart-rate or eye-movement channels) and standardizes electrode names so both hospitals match.
+        * **Box 3 — Resampling to 256 Hz:** Adjusts recording speeds so every file captures exactly **256 brainwave snapshots per second** (Siena was recorded twice as fast at 512 Hz, so we downsample it to match Boston's 256 Hz).
+        * **Box 4 — Band-pass filtering (0.5–40 Hz):** Acts like an audio equalizer—blocks slow baseline drift (`< 0.5 Hz`, like breathing/sweat) and high-frequency electrical hum (`> 40 Hz`, like wall outlets), keeping only true brainwave frequencies.
+        * **Box 5 — 30 s windows with 50% overlap:** Slices the continuous recording into **30-second clips**, stepping forward every **15 seconds** (as shown in Figure 4).
+        * **Box 6 — Label generation:** Tags each 30-second clip as **`1` (Pre-ictal warning)** or **`0` (Inter-ictal normal)** based on its distance from a seizure.
+        * **Box 7 — Chunk caching / feature extraction:** Saves the cleaned clips onto disk as compressed `.npz` chunks (for the 1D-CNN) and extracts 144 summary stats (for the baseline models) so the computer never runs out of memory.
+        """)
+
+    st.markdown("---")
+
+    # --- FIGURE 5 ROW ---
+    st.markdown("#### 2. Making Boston & Italy Speak the Same Sensor Language (`Figure 5`)")
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_05_channel_harmonisation.png", "Figure 5: Unifying two different electrode wiring methods into one 16-channel standard")
+    with col2:
+        st.info("""
+        **How to read the three boxes & inward arrows:**
+        * **Why do both outer arrows point toward the center?** Because two completely different hospital setups (left and right) are being converted into **one shared middle format** so a single AI model can read both.
+        * **Left Box — CHB-MIT (Bipolar channels):** The Boston hospital recorded brainwaves as **pairs** (e.g., `FP1-F7`), measuring the electrical voltage *difference* between two neighboring scalp sensors.
+        * **Right Box — Siena (Referential → bipolar):** The Italian hospital recorded each sensor individually against a single reference point (e.g., `Fp1`, `F7`) and used older naming labels (like `T3` instead of `T7`). Our code renames the sensors and subtracts pairs (`FP1 minus F7`) to reconstruct the exact same paired signals.
+        * **Center Box — Common 16-channel harmonised montage:** A **"montage"** is simply the map of sensor connections on a patient's head. Both datasets end up with the **exact same 16 paired brain channels** in the exact same order.
+        """)
+
+    st.markdown("---")
+
+   # =========================================================
+    # STEP C: THE 1D-CNN ARCHITECTURE (FIGURE 8)
+    # =========================================================
+    st.subheader("Step C: How the AI Model Reads Raw Brainwaves (`Figure 8`)")
+    st.write("Traditional machine learning requires humans to manually calculate summary statistics (like average wave power) before training. Instead, our **1D Convolutional Neural Network (1D-CNN)** reads the raw brainwave curves directly from left to right[cite: 6].")
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_08_cnn_architecture.png", "Figure 8: High-level flow of a 30-second brainwave clip through the 1D-CNN")
     with col2:
         st.success("""
-        **How the model reads brainwaves:**
-        * Instead of manually hand-crafting frequency features, the **1D-CNN** scans raw waveforms (`16 channels × 7,680 time steps`) directly.
-        * Convolutional blocks automatically learn rhythmic spikes and frequency shifts across time, outputting a seizure probability via a Sigmoid layer.
+        **How to read this diagram (Follow the arrows Left → Right):**
+        * *(Note: There are no axes here—each blue box shows how one 30-second brainwave clip is transformed step by step into a final warning score.)*
+        * **Box 1 — `Input (16 × 7680)`:** What do these two numbers mean?
+          * **`16`** = The **16 harmonized brain channels** (sensor pairs across the scalp)[cite: 6].
+          * **`7680`** = The exact number of brainwave measurements in one 30-second clip (`30 seconds × 256 snapshots per second = 7,680 time steps`)[cite: 6].
+        * **Box 2 — `Conv Block 1` (Early Pattern Detector):** Slides small digital filters across the raw waves to spot basic, fast shapes—like sharp spikes, sudden voltage jumps, or rhythmic ripples.
+        * **Box 3 — `Conv Block 2` (Deep Pattern Detector):** Combines those basic shapes into higher-level patterns across multiple brain channels that signal early pre-seizure brain changes[cite: 5, 6].
+        * **Box 4 — `Pooling / Flatten` (Summarizer):** Compresses thousands of time-step readings down into a compact list of the **128 strongest pattern scores** found anywhere in that 30-second window[cite: 5, 6].
+        * **Box 5 — `Dense + Dropout` (Decision Maker & Overfitting Guard):** Weighs all 128 pattern scores together to make a decision[cite: 5, 6]. **`Dropout` (30%)** randomly switches off 30% of connections during training so the model cannot simply memorize one patient's quirks[cite: 5, 6].
+        * **Box 6 — `Sigmoid output` (Final Risk Score):** Squashes the final calculation into a clean probability between **`0.0` (0% risk — Normal)** and **`1.0` (100% risk — Impending Seizure)**[cite: 5]. If this score crosses our alert threshold (`0.5` or `0.1`), an early warning is triggered[cite: 6].
         """)
 
     with st.expander("📋 View Exact Preprocessing & Labelling Parameters (Table 3)"):
         st.dataframe(load_table("table_03_preprocessing_labelling_parameters.csv"), use_container_width=True)
 
-    st.markdown("👉 **Next step:** Go to **2. The Two Hospital Datasets** to see how much data we collected and why class imbalance is a major challenge.")
+    st.markdown("👉 **Next step:** Go to **2. The Two Hospital Datasets** in the sidebar to see how much data we collected and why severe class imbalance makes accuracy misleading.")
 
 # =========================================================
 # PAGE 2: DATASET CHARACTERISTICS
