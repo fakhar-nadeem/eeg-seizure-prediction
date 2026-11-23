@@ -104,7 +104,19 @@ if page == "0. Start Here: The Story":
 # =========================================================
 # PAGE 1: ARCHITECTURE & METHODOLOGY
 # =========================================================
-# =========================================================
+elif page == "1. How the Data & Model Work":
+    st.header("1. Turning Raw Brainwaves into Early Warnings")
+    st.write("Before training any model, raw hospital EEG recordings must be cleaned, sliced into time windows, and standardized so two completely different hospitals speak the same data language.")
+
+    # Quick at-a-glance math strip
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Clip Length", "30 Seconds", "7,680 samples @ 256 Hz")
+    m2.metric("Sliding Step", "15 Seconds", "50% window overlap")
+    m3.metric("Sensor Standard", "16 Channels", "Unified 10-20 bipolar pairs")
+
+    st.markdown("---")
+
+    # =========================================================
     # STEP A: DEFINING THE WARNING ZONE (FIGURE 1 & FIGURE 4)
     # =========================================================
     st.subheader("Step A: Defining the Early Warning Zone & Slicing the Signal")
@@ -186,13 +198,16 @@ if page == "0. Start Here: The Story":
         * **Center Box — Common 16-channel harmonised montage:** A **"montage"** is simply the map of sensor connections on a patient's head. Both datasets end up with the **exact same 16 paired brain channels** in the exact same order.
         """)
 
+    with st.expander("🔍 View the Exact 16 Harmonized 10-20 Bipolar Channels"):
+        st.code("['FP1-F7', 'F7-T7', 'T7-P7', 'P7-O1', 'FP1-F3', 'F3-C3', 'C3-P3', 'P3-O1',\n 'FP2-F4', 'F4-C4', 'C4-P4', 'P4-O2', 'FP2-F8', 'F8-T8', 'P8-O2', 'FZ-CZ']", language="python")
+
     st.markdown("---")
 
-   # =========================================================
+    # =========================================================
     # STEP C: THE 1D-CNN ARCHITECTURE (FIGURE 8)
     # =========================================================
     st.subheader("Step C: How the AI Model Reads Raw Brainwaves (`Figure 8`)")
-    st.write("Traditional machine learning requires humans to manually calculate summary statistics (like average wave power) before training. Instead, our **1D Convolutional Neural Network (1D-CNN)** reads the raw brainwave curves directly from left to right[cite: 6].")
+    st.write("Traditional machine learning requires humans to manually calculate summary statistics (like average wave power) before training. Instead, our **1D Convolutional Neural Network (1D-CNN)** reads the raw brainwave curves directly from left to right.")
 
     col1, col2 = st.columns([3, 2])
     with col1:
@@ -202,20 +217,20 @@ if page == "0. Start Here: The Story":
         **How to read this diagram (Follow the arrows Left → Right):**
         * *(Note: There are no axes here—each blue box shows how one 30-second brainwave clip is transformed step by step into a final warning score.)*
         * **Box 1 — `Input (16 × 7680)`:** What do these two numbers mean?
-          * **`16`** = The **16 harmonized brain channels** (sensor pairs across the scalp)[cite: 6].
-          * **`7680`** = The exact number of brainwave measurements in one 30-second clip (`30 seconds × 256 snapshots per second = 7,680 time steps`)[cite: 6].
+          * **`16`** = The **16 harmonized brain channels** (sensor pairs across the scalp).
+          * **`7680`** = The exact number of brainwave measurements in one 30-second clip (`30 seconds × 256 snapshots per second = 7,680 time steps`).
         * **Box 2 — `Conv Block 1` (Early Pattern Detector):** Slides small digital filters across the raw waves to spot basic, fast shapes—like sharp spikes, sudden voltage jumps, or rhythmic ripples.
-        * **Box 3 — `Conv Block 2` (Deep Pattern Detector):** Combines those basic shapes into higher-level patterns across multiple brain channels that signal early pre-seizure brain changes[cite: 5, 6].
-        * **Box 4 — `Pooling / Flatten` (Summarizer):** Compresses thousands of time-step readings down into a compact list of the **128 strongest pattern scores** found anywhere in that 30-second window[cite: 5, 6].
-        * **Box 5 — `Dense + Dropout` (Decision Maker & Overfitting Guard):** Weighs all 128 pattern scores together to make a decision[cite: 5, 6]. **`Dropout` (30%)** randomly switches off 30% of connections during training so the model cannot simply memorize one patient's quirks[cite: 5, 6].
-        * **Box 6 — `Sigmoid output` (Final Risk Score):** Squashes the final calculation into a clean probability between **`0.0` (0% risk — Normal)** and **`1.0` (100% risk — Impending Seizure)**[cite: 5]. If this score crosses our alert threshold (`0.5` or `0.1`), an early warning is triggered[cite: 6].
+        * **Box 3 — `Conv Block 2` (Deep Pattern Detector):** Combines those basic shapes into higher-level patterns across multiple brain channels that signal early pre-seizure brain changes.
+        * **Box 4 — `Pooling / Flatten` (Summarizer):** Compresses thousands of time-step readings down into a compact list of the **128 strongest pattern scores** found anywhere in that 30-second window.
+        * **Box 5 — `Dense + Dropout` (Decision Maker & Overfitting Guard):** Weighs all 128 pattern scores together to make a decision. **`Dropout` (30%)** randomly switches off 30% of connections during training so the model cannot simply memorize one patient's quirks.
+        * **Box 6 — `Sigmoid output` (Final Risk Score):** At prediction time, converts the network's raw score into a clean probability between **`0.0` (0% risk — Normal)** and **`1.0` (100% risk — Impending Seizure)**. If this score crosses our alert threshold (`0.5` or `0.1`), an early warning is triggered.
         """)
 
     with st.expander("📋 View Exact Preprocessing & Labelling Parameters (Table 3)"):
         st.dataframe(load_table("table_03_preprocessing_labelling_parameters.csv"), use_container_width=True)
 
     st.markdown("👉 **Next step:** Go to **2. The Two Hospital Datasets** in the sidebar to see how much data we collected and why severe class imbalance makes accuracy misleading.")
-
+    
 # =========================================================
 # PAGE 2: DATASET CHARACTERISTICS
 # =========================================================
