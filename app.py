@@ -321,55 +321,119 @@ elif page == "2. The Two Hospital Datasets":
         st.dataframe(load_table("table_04_valid_chb_patient_cohort_summary.csv"), use_container_width=True)
 
     st.markdown("👉 **Next step:** Go to **3. Act I: Unseen Patients (CHB-MIT)** in the sidebar to see how well the 1D-CNN and baseline models perform when tested on a brand-new patient.")
-    
+
 # =========================================================
-# PAGE 3: CHB-MIT GENERALIZATION
+# PAGE 3: CHB-MIT GENERALIZATION (ACT I)
 # =========================================================
 elif page == "3. Act I: Unseen Patients (CHB-MIT)":
     st.header("3. Act I: Can the Model Generalize to Unseen Patients?")
-    st.write("We used strict **Leave-One-Patient-Out (LOPO)** cross-validation: the model is trained on 9 patients and tested on the 10th patient it has never seen.")
+    st.write("To simulate real hospital deployment, we used strict **Leave-One-Patient-Out (LOPO)** cross-validation: the model trains on 4 valid Boston patients and is tested on the **5th patient it has never seen before**, repeated across all 5 patients.")
 
-    col1, col2 = st.columns(2)
-    with col1:
-        show_image("figure_07_baseline_model_comparison.png", "Traditional ML baselines (Logistic Regression & Random Forest)")
-    with col2:
-        show_image("figure_09_chb_lopo_model_comparison.png", "1D-CNN vs. statistical baselines across LOPO folds")
+    # Quick at-a-glance Act I KPI strip
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Best Unseen-Patient AUC", "0.568", "+0.130 vs best baseline")
+    m2.metric("Top CNN Recall (@ 0.1)", "54.9%", "Catches most warning clips")
+    m3.metric("Top CNN Accuracy (@ 0.5)", "71.0%", "Lowest false-alarm rate")
+    m4.metric("Same-Patient Ceiling", "0.990 AUC", "Upper-bound sanity check")
 
-    st.success("""
-    **Act I Takeaway:**  
-    Traditional models (Logistic Regression and Random Forest) struggle to find patterns that hold across different human brains. 
-    The **1D-CNN** learns richer temporal features from the raw EEG signal, outperforming baselines across unseen patients—especially when lowering the alert threshold to `0.1` to catch subtle pre-seizure shifts.
-    """)
-
-    st.dataframe(load_table("table_08_final_chb_comparison.csv"), use_container_width=True)
     st.markdown("---")
 
-    st.subheader("Why Patient-Specific Papers Look 'Too Good to Be True'")
+    # =========================================================
+    # STEP A: STATISTICAL BASELINES (FIGURE 7)
+    # =========================================================
+    st.subheader("Step A: How Do Traditional ML Models Perform on Unseen Patients? (`Figure 7`)")
+    st.write("Before testing deep learning, we tested two classic machine learning models—**Logistic Regression** and **Random Forest**—using 144 manually calculated brainwave statistics.")
+
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_15_patient_specific_vs_independent.png", "Same-patient upper bound vs. realistic unseen-patient generalization")
+        show_image("figure_07_baseline_model_comparison.png", "Figure 7: Leave-One-Patient-Out (LOPO) mean scores for traditional statistical baselines")
     with col2:
         st.info("""
-        **Sanity Check Finding:**  
-        When a model is trained and tested on the **same patient** (left bars), scores shoot up because the model memorizes that specific person's brainwave signature. 
-        Testing on **unseen patients** (right bars) is much harder—and represents the true clinical benchmark.
+        **Questions & Answers to Read This Chart:**
+        * **What are the axes?** The horizontal axis (`model`) compares our two baseline algorithms; the vertical axis (`Score`) shows their average score (`0.0` to `0.65`) across all 5 unseen patients.
+        * **Why is Logistic Regression's blue `accuracy_mean` bar (`0.614`) tall while its green `recall_mean` bar (`0.239`) is low?** Because 93.8% of the data is normal, Logistic Regression plays it safe by mostly guessing *"Normal"*—missing **76%** of pre-seizure warning clips.
+        * **What does `(0.1)` mean next to Random Forest?** By default, models only trigger an alert when risk exceeds `50%` (`0.5`). Lowering that trigger to `10%` (`0.1`) makes Random Forest much more sensitive—pushing its green Recall bar up to **`0.504`**, though extra false alarms pull its blue Accuracy bar down to **`0.433`**.
+        * **Why are both red `auc_mean` bars (`0.416` and `0.438`) below `0.50`?** An AUC of `0.50` equals random coin-flipping. Both traditional models struggle to separate pre-seizure from normal brainwaves on brand-new patients because hand-crafted summary stats don't transfer well across different brains.
         """)
 
-    col_loss, col_tables = st.columns([1, 1])
-    with col_loss:
-        st.subheader("Training Stability")
-        show_image("figure_16_chb_source_training_loss.png", "Smooth convergence of the source 1D-CNN on CHB-MIT")
-    with col_tables:
-        st.subheader("Detailed Per-Patient Breakdowns")
-        with st.expander("📋 Table 5: Baseline LOPO Per-Patient Results"):
+    st.markdown("---")
+
+    # =========================================================
+    # STEP B: 1D-CNN VS BASELINES (FIGURE 9 & TABLE 8)
+    # =========================================================
+    st.subheader("Step B: Does the 1D-CNN Beat the Baselines on Unseen Patients? (`Figure 9`)")
+    st.write("Next, we tested our **1D-CNN** (which reads raw brainwave curves directly without hand-crafted features) under the exact same Leave-One-Patient-Out rules.")
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_09_chb_lopo_model_comparison.png", "Figure 9: Full LOPO comparison across Baselines and 1D-CNN at thresholds 0.1 and 0.5")
+    with col2:
+        st.success("""
+        **Questions & Answers to Read This Chart:**
+        * **What is the biggest takeaway?** Look at the **red `auc_mean` bars** across all 4 models: the 1D-CNN jumps to **`0.568`**, beating random chance (`0.50`) and outperforming both Logistic Regression (`0.416`) and Random Forest (`0.438`).
+        * **Why are the red AUC bars identical (`0.568`) for `CNN (0.1)` and `CNN (0.5)`?** ROC-AUC measures the model's overall ranking ability across *all* possible thresholds—it stays the same regardless of where you set the alarm trigger.
+        * **Why show both `CNN (0.1)` and `CNN (0.5)`?** They are the exact same trained neural network with two different alert dials:
+          * **`CNN (0.1)` (Sensitive Dial):** Triggers an alarm at `10%` risk—achieving the highest seizure warning **Recall (`0.549` / 54.9%)** and highest **F1 score (`0.192`)** across every model tested.
+          * **`CNN (0.5)` (Strict Dial):** Waits until `50%` risk—achieving the highest overall **Accuracy (`0.710` / 71.0%)**, but catching fewer subtle pre-seizure clips (`0.329` Recall).
+        """)
+
+    with st.expander("📋 View Exact Mean ± Std Comparison Table Across All 4 Models (Table 8)", expanded=True):
+        st.dataframe(load_table("table_08_final_chb_comparison.csv"), use_container_width=True)
+
+    st.markdown("---")
+
+    # =========================================================
+    # STEP C: PATIENT-SPECIFIC VS INDEPENDENT (FIGURE 15)
+    # =========================================================
+    st.subheader("Step C: Why Academic Papers Report '99% Accuracy' — The Reality Check (`Figure 15`)")
+    st.write("Many published papers report near-perfect seizure prediction because they train and test on clips from the **same patient**. We ran a sanity-check experiment to compare that easy setup against our strict unseen-patient test.")
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_15_patient_specific_vs_independent.png", "Figure 15: Unseen-patient LOPO generalization (left) vs. same-patient upper bound (right)")
+    with col2:
+        st.warning("""
+        **Questions & Answers to Read This Chart:**
+        * **What is being compared on the horizontal axis (`Setting`)?**
+          * **Left (`Patient-independent CNN (0.1)`):** Tested on a **brand-new patient** excluded from training (our realistic LOPO benchmark).
+          * **Right (`Patient-specific LR`):** Trained on early recordings from a patient and tested on later recordings from that **exact same patient**.
+        * **Why do all 4 bars shoot up near `1.0` on the right (`0.944` Accuracy, `0.842` F1, `0.948` Recall, `0.990` AUC)?** Every human brain has a unique electrical signature. When tested on the same person, even a simple linear model memorizes that patient's personal brainwaves.
+        * **Why does this matter?** A new patient arriving at a hospital does not have hours of pre-recorded seizures to train a personal model. The left bars show the **honest clinical challenge**—and prove why cross-patient generalization is the true benchmark.
+        """)
+
+    st.markdown("---")
+
+    # =========================================================
+    # STEP D: SOURCE CNN TRAINING STABILITY (FIGURE 16)
+    # =========================================================
+    st.subheader("Step D: Training the Final Boston Source Model (`Figure 16`)")
+    st.write("After validating the 1D-CNN architecture via LOPO, we trained one final source model across all 5 valid CHB-MIT patients to prepare for our cross-hospital test in Italy.")
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_16_chb_source_training_loss.png", "Figure 16: Training loss progression across 5 epochs on the combined CHB-MIT cohort")
+    with col2:
+        st.info("""
+        **Questions & Answers to Read This Chart:**
+        * **What does `Epoch` on the horizontal axis (`1.0` to `5.0`) mean?** One **Epoch** is one complete pass where the 1D-CNN reads through every training window across all 5 Boston patients. The 5 blue dots mark the error score after each full pass (`1, 2, 3, 4, 5`).
+        * **What does `Training loss` on the vertical axis (`0.50` to `0.80`) mean?** It measures how far off the model's predictions are from the true labels (`BCEWithLogitsLoss`)—**lower means fewer mistakes**.
+        * **What does the smooth downward curve prove?** Loss drops sharply from **`~0.805` (Epoch 1)** to **`~0.613` (Epoch 2)** and continues declining smoothly down to **`~0.482` (Epoch 5)**. This confirms stable learning without erratic jumps before saving the model for Act II.
+        """)
+
+    st.subheader("Detailed Per-Patient & Fold Tables")
+    t1, t2, t3 = st.columns(3)
+    with t1:
+        with st.expander("📋 Table 5: Baseline Per-Patient Results"):
             st.dataframe(load_table("table_05_baseline_lopo_per_patient_results.csv"), use_container_width=True)
-        with st.expander("📋 Table 6: Baseline Summary Statistics"):
+    with t2:
+        with st.expander("📋 Table 6: Baseline Summary Stats"):
             st.dataframe(load_table("table_06_baseline_summary_statistics.csv"), use_container_width=True)
-        with st.expander("📋 Table 7: CNN Summary Statistics"):
+    with t3:
+        with st.expander("📋 Table 7: CNN Summary Stats"):
             st.dataframe(load_table("table_07_cnn_summary_statistics.csv"), use_container_width=True)
 
-    st.markdown("👉 **Next step:** Go to **4. Act II: Unseen Hospital (Siena)** to see what happens when we deploy this Boston model to a hospital in Italy.")
-
+    st.markdown("👉 **Next step:** Go to **4. Act II: Unseen Hospital (Siena)** in the sidebar to see what happens when we deploy this Boston-trained model to an unseen hospital in Italy.")
+    
 # =========================================================
 # PAGE 4: CROSS-DATASET TRANSFER (SIENA)
 # =========================================================
