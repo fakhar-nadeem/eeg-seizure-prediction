@@ -539,7 +539,6 @@ elif page == "5. Act III: Clinical Viability & Burden":
     **catching every upcoming seizure** and **causing nurse alarm fatigue**.
     """)
 
-    # Quick at-a-glance Act III KPI strip
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("Max Checks / Hour", "240 windows", "30s window, 15s step")
     m2.metric("Baseline False Burden", "~234–239 / hr", "Alarms on ~98% of windows")
@@ -548,9 +547,6 @@ elif page == "5. Act III: Clinical Viability & Burden":
 
     st.markdown("---")
 
-    # =========================================================
-    # STEP A: EVENT SENSITIVITY VS FALSE POSITIVE BURDEN (FIGURE 14)
-    # =========================================================
     st.subheader("Step A: Advance Seizure Warnings vs. False Alarms Per Hour (`Figure 14`)")
     st.write("""
     **What we did:** We grouped continuous 30-second window predictions on Siena into seizure events and measured two clinical metrics: 
@@ -576,9 +572,6 @@ elif page == "5. Act III: Clinical Viability & Burden":
 
     st.markdown("---")
 
-    # =========================================================
-    # STEP B: HONEST CLINICAL ENGINEERING ASSESSMENT
-    # =========================================================
     st.subheader("Step B: Key Takeaway & Next Steps for Real-World Deployment")
     c1, c2 = st.columns(2)
     with c1:
@@ -595,7 +588,7 @@ elif page == "5. Act III: Clinical Viability & Burden":
         """)
 
     st.markdown("👉 **Next step:** Go to **6. Appendix & Metadata** in the sidebar to view how every chapter maps to our research questions and literature benchmarks.")
-    
+
 # =========================================================
 # PAGE 6: APPENDIX & METADATA
 # =========================================================
