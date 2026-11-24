@@ -32,13 +32,15 @@ def show_image(filename, caption):
 # ---------------------------------------------------------
 st.sidebar.title("🧭 Project Storyline")
 page = st.sidebar.radio("Select Chapter/Section:", [
-    "1. Architecture & Methodology",
-    "2. Dataset Characteristics",
-    "3. Act I: Unseen Patients (CHB-MIT)",
-    "4. Act II: Unseen Hospital (Siena)",
+    "0. Executive Summary & Takeaways",
+    "1. Architecture & Methodology", 
+    "2. Dataset Characteristics", 
+    "3. Act I: Unseen Patients (CHB-MIT)", 
+    "4. Act II: Unseen Hospital (Siena)", 
     "5. Act III: Clinical Viability & Burden",
     "6. Appendix & Metadata"
 ])
+
 
 st.sidebar.markdown("---")
 with st.sidebar.expander("📖 Quick Glossary (Plain English)", expanded=True):
@@ -57,49 +59,147 @@ st.markdown("**Can a deep learning model warn patients up to 25 minutes before a
 st.markdown("---")
 
 # =========================================================
-# PAGE 0: START HERE (THE STORY & HERO METRICS)
+# PAGE 0: EXECUTIVE SUMMARY & PROJECT TAKEAWAYS
 # =========================================================
-if page == "0. Start Here: The Story":
-    st.header("The Problem & Why Most Models Fail in the Real World")
-    
+if page == "0. Executive Summary & Takeaways":
+    st.header("Executive Summary: End-to-End Project Overview")
     st.write("""
-    For people living with drug-resistant epilepsy, the unpredictability of seizures is one of the greatest dangers. 
-    An early warning system—even **25 minutes in advance**—gives patients time to get to safety or take fast-acting medication.
-    
-    **The Catch:** Many academic studies report >95% accuracy because they train and test on the *same* patient. 
-    In reality, a hospital needs a model that works out-of-the-box on **new, unseen patients** and across **different EEG machines**. 
-    This project stress-tests a 1D Convolutional Neural Network (1D-CNN) against both challenges.
+    This project investigates whether deep learning can predict epileptic seizures **5 to 30 minutes before onset** 
+    not only on **brand-new patients**, but also across **completely different hospitals and recording equipment**.
     """)
 
-    # Hero KPI Cards
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total EEG Windows", "31,147", "30-sec brainwave clips")
-    col2.metric("Patients Studied", "18 Patients", "2 hospitals (US & Italy)")
-    col3.metric("Early Warning Lead", "Up to 25 Min", "5–30 min pre-seizure")
-    col4.metric("Fine-Tuned Sensitivity", "75.0%", "+21.7% over zero-shot")
+    # Top-level KPI Summary Strip
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Total EEG Data", "31,147 Windows", "CHB-MIT (28,025) + Siena (3,122)")
+    k2.metric("Unseen-Patient AUC", "0.568", "1D-CNN vs 0.438 Best Baseline")
+    k3.metric("Cross-Hospital Recovery", "0.589 AUC", "+0.194 after 5-epoch fine-tuning")
+    k4.metric("Fine-Tuned Sensitivity", "76.2% Window / 100% Event", "At 0.1 clinical alert threshold")
 
     st.markdown("---")
-    st.subheader("🗺️ How to Read This Dashboard (3-Act Narrative)")
-    
-    c1, c2, c3 = st.columns(3)
+
+    # =========================================================
+    # 1. WHAT WE DID
+    # =========================================================
+    st.subheader("1. What We Did (Methodology & Experimental Design)")
+    c1, c2 = st.columns(2)
     with c1:
         st.info("""
-        **Act I: Unseen Patients (Boston)**  
-        We test whether a 1D-CNN can detect pre-seizure brain patterns in a brand-new patient it has never seen before, beating traditional ML baselines.
+        **Data Engineering & Harmonization**
+        * **Unified Two Distinct Hospitals:** Combined pediatric scalp EEG from **CHB-MIT (Boston, USA)** and adult scalp EEG from **Siena (Italy)**[cite: 16, 17].
+        * **Signal & Channel Standardization:** Mapped differing electrode setups into a common **16-channel bipolar montage**, resampled all signals to **256 Hz**, and applied a **0.5–40 Hz bandpass filter**[cite: 17].
+        * **Leakage-Free Windowing:** Sliced recordings into **30-second windows (50% overlap)**, labeling **30 to 5 minutes before seizure onset** as *pre-ictal* and enforcing a strict **2-hour exclusion buffer** around seizures for *interictal* (normal) baseline data[cite: 17].
+        * **Memory-Safe Pipeline:** Engineered `.npz` chunk caching to process **31,147 windows** (~236 MB per channel tensor set) without Out-Of-Memory crashes[cite: 16, 17].
         """)
     with c2:
+        st.info("""
+        **Three-Act Validation Strategy**
+        * **Act I — Unseen Patients (CHB-MIT LOPO):** Evaluated Logistic Regression, Random Forest (144 hand-crafted features), and a raw-waveform **1D-CNN** using strict **Leave-One-Patient-Out (LOPO)** cross-validation across all 5 valid seizure patients (`chb01`–`chb05`), plus a same-patient sanity check[cite: 17].
+        * **Act II — Unseen Hospital (CHB-MIT → Siena):** Tested the Boston-trained models **zero-shot** on 8 Italian patients (`3,122` windows), then **fine-tuned the 1D-CNN for 5 epochs** on 4 calibration patients (`PN00, PN01, PN03, PN12`) and tested on **4 completely unseen holdout patients** (`PN05, PN09, PN10, PN14` — `2,063` windows)[cite: 17].
+        * **Act III — Clinical Bedside Viability:** Converted window scores into **event-level seizure sensitivity** and **false-positive alarms per hour**[cite: 17].
+        """)
+
+    st.markdown("---")
+
+    # =========================================================
+    # 2. WHAT OUTPUT WE GOT & 3. WHY WE GOT IT
+    # =========================================================
+    st.subheader("2. What Output We Got — And Why We Got It")
+
+    summary_results = pd.DataFrame([
+        {
+            "Experiment Stage": "Same-Patient Sanity Check (CHB-MIT)",
+            "Best Model": "Patient-Specific LR",
+            "ROC-AUC": "0.990",
+            "Recall / Sensitivity": "94.8%",
+            "Key Takeaway": "Upper-bound ceiling when training & testing on the same person[cite: 17]"
+        },
+        {
+            "Experiment Stage": "Act I: Unseen Patients (CHB-MIT LOPO)",
+            "Best Model": "1D-CNN (Threshold 0.1)",
+            "ROC-AUC": "0.568",
+            "Recall / Sensitivity": "54.9%",
+            "Key Takeaway": "Beats LR (0.416 AUC) & RF (0.438 AUC) on brand-new patients[cite: 17]"
+        },
+        {
+            "Experiment Stage": "Act IIa: Zero-Shot New Hospital (Siena)",
+            "Best Model": "1D-CNN Zero-Shot (0.1)",
+            "ROC-AUC": "0.395",
+            "Recall / Sensitivity": "53.3%",
+            "Key Takeaway": "-0.173 AUC drop proves severe cross-hospital domain shift[cite: 17]"
+        },
+        {
+            "Experiment Stage": "Act IIb: Fine-Tuned New Hospital (Siena)",
+            "Best Model": "1D-CNN Fine-Tuned (0.1)",
+            "ROC-AUC": "0.589",
+            "Recall / Sensitivity": "76.2%",
+            "Key Takeaway": "+0.194 AUC recovery; outperforms original Boston benchmark[cite: 17]"
+        },
+        {
+            "Experiment Stage": "Act III: Clinical Event Burden (Siena)",
+            "Best Model": "1D-CNN Fine-Tuned (0.1)",
+            "ROC-AUC": "0.589",
+            "Recall / Sensitivity": "100% Event",
+            "Key Takeaway": "Cuts false alerts to ~170.6/hr vs ~239.4/hr for LR (max 240/hr)[cite: 17]"
+        }
+    ])
+    st.dataframe(summary_results, use_container_width=True, hide_index=True)
+
+    col_why1, col_why2 = st.columns(2)
+    with col_why1:
         st.warning("""
-        **Act II: Unseen Hospital (Italy)**  
-        We take the Boston-trained model and test it cold (*zero-shot*) on an Italian hospital dataset. Performance drops due to equipment/population shift—until we fine-tune it.
+        **Why Did Performance Drop Across Patients & Hospitals?**
+        * **Unique Brain Signatures (`0.990` vs `0.568` AUC):** Every individual has distinct baseline EEG rhythms. Same-patient splits allow models to memorize personal signatures, whereas unseen-patient LOPO forces true generalization[cite: 17].
+        * **Hardware & Cohort Domain Shift (`0.568` → `0.395` AUC):** Even with identical 16-channel names and 256 Hz sampling rates, Siena uses adult patients and referential-to-bipolar signal conversion—causing uncalibrated Boston filters to misfire[cite: 17].
         """)
-    with c3:
+    with col_why2:
         st.success("""
-        **Act III: Clinical Reality Check**  
-        High window accuracy means nothing if an alarm goes off every 5 minutes. We measure **seizure events caught vs. false alarms per hour**.
+        **Why Did 1D-CNN + Light Fine-Tuning Recover Performance?**
+        * **Raw Temporal Filters Beat Summary Stats:** Unlike Logistic Regression or Random Forest (which rely on 144 static summary numbers), the 1D-CNN learns wave shapes directly from raw EEG[cite: 17].
+        * **Rapid Target Adaptation (`0.395` → `0.589` AUC):** Fine-tuning for just 5 epochs on 4 local Siena patients realigned the network's convolutional filters to Italian hospital hardware without overfitting[cite: 17].
+        * **Threshold & Window Independence:** Lowering the alert dial to `0.1` catches subtle pre-ictal shifts (`76.2%` recall), while scoring 30s windows independently leaves ~170 raw alerts/hr before smoothing[cite: 17].
         """)
 
-    st.markdown("👉 **Next step:** Select **1. How the Data & Model Work** in the left sidebar to see how raw brainwaves are turned into predictions.")
+    st.markdown("---")
 
+    # =========================================================
+    # 4. WHAT DO WE UNDERSTAND IN THE END
+    # =========================================================
+    st.subheader("3. What Do We Understand From This Project in the End?")
+    st.success("""
+    1. **'99% Accuracy' Papers Are Misleading for New Patients:** True clinical readiness must be measured via **Leave-One-Patient-Out (LOPO)** and **cross-dataset** testing, not overlapping splits from the same patient[cite: 17].
+    2. **Data Harmonization Alone Does Not Solve Domain Shift:** Standardizing channels and sampling rates is necessary, but physiological and hardware differences across hospitals still degrade zero-shot models[cite: 17].
+    3. **Light Local Calibration Is Practical & Effective:** A pre-trained neural network does not need to be rebuilt from scratch for every hospital—brief fine-tuning on a small local patient cohort restores and even improves predictive power[cite: 17].
+    4. **Window Metrics Are Not Enough for Hospital Deployment:** Evaluating **event-level sensitivity alongside hourly false-alarm burden** is essential to bridge the gap between ML benchmarks and bedside usability[cite: 17].
+    """)
+
+    st.markdown("---")
+
+    # =========================================================
+    # 5. HOW IT CAN BE IMPROVED & 6. FUTURE APPLICATIONS
+    # =========================================================
+    col_imp, col_app = st.columns(2)
+
+    with col_imp:
+        st.subheader("4. How This Project Can Be Improved")
+        st.markdown("""
+        * **Temporal Alarm Smoothing ($k$-of-$n$ Persistence):** Require at least *4 out of 6 consecutive windows* to exceed the risk threshold plus a 15–30 minute cooldown window—reducing raw alerts (`~170/hr`) to **< 1 false alarm per hour**.
+        * **Advanced Architectures & Domain Adaptation:** Explore hybrid **CNN-Transformer / Conformer** models, adversarial domain adaptation, and per-patient adaptive normalization to improve zero-shot transfer without labels.
+        * **Automated Artifact Rejection:** Integrate Independent Component Analysis (ICA) or wavelet denoising to strip muscle (EMG) and eye-blink artifacts before inference.
+        * **Multi-Center Scale & Uncertainty Estimation:** Train across larger repositories (e.g., Temple University Hospital EEG Corpus) and add conformal prediction to flag noisy/unreliable readings.
+        """)
+
+    with col_app:
+        st.subheader("5. Future Real-World Applications")
+        st.markdown("""
+        * **Wearable Seizure Warning Headsets:** Pair lightweight, dry-electrode EEG headbands with a smartphone app to give epilepsy patients a **5–30 minute safety alert** to sit down, alert caregivers, or take fast-acting rescue medication.
+        * **Hospital ICU & Epilepsy Monitoring Units (EMUs):** Provide real-time bedside risk dashboards that warn neurologists and nurses ahead of dangerous seizure clusters or status epilepticus.
+        * **Plug-and-Calibrate Hospital Onboarding:** Deploy a foundation seizure-prediction model that hospitals can rapidly calibrate to their local EEG machines using just a handful of local patient recordings.
+        * **Closed-Loop Neuromodulation Devices:** Serve as an intelligent trigger for Responsive Neurostimulation (RNS) or Vagus Nerve Stimulation (VNS) implants to deliver targeted pulses and abort seizures before clinical onset.
+        """)
+
+    st.markdown("---")
+    st.markdown("👉 **Explore the full technical evidence:** Use the left sidebar to inspect the **Preprocessing Pipeline (Chapter 1)**, **CHB-MIT LOPO Results (Chapter 3)**, **Siena Domain Adaptation (Chapter 4)**, and **Clinical Burden Analysis (Chapter 5)**.")
+    
 # =========================================================
 # PAGE 1: ARCHITECTURE & METHODOLOGY
 # =========================================================
