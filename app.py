@@ -528,30 +528,75 @@ elif page == "4. Act II: Unseen Hospital (Siena)":
         st.dataframe(load_table("table_10_fine_tuning_results.csv"), use_container_width=True)
 
     st.markdown("👉 **Next step:** Go to **5. Act III: Clinical Viability & Burden** in the sidebar to see how these window scores translate into real hospital bedside alarms per hour.")
-    
+
 # =========================================================
-# PAGE 5: EVENT-LEVEL CLINICAL BURDEN
+# PAGE 5: CLINICAL EVENT-LEVEL BURDEN (ACT III)
 # =========================================================
-elif page == "5. Act III: Real-World Clinical Burden":
-    st.header("5. Act III: Clinical Reality — Catching Seizures vs. Alarm Fatigue")
+elif page == "5. Act III: Clinical Viability & Burden":
+    st.header("5. Act III: Is This Ready for a Hospital Bedside? (Clinical Burden Analysis)")
     st.write("""
-    In a hospital or wearable device, doctors don't care about isolated 30-second window scores—they care about two practical questions:
-    1. **Event Sensitivity:** Did the system warn the patient *at least once* during the 25-minute lead-up to an actual seizure?
-    2. **False Positive Burden:** How many false alarms per hour does the patient have to endure?
+    High window-level recall does not automatically make a medical device usable in an intensive care unit. 
+    In Act III, we translated our Siena predictions into **event-level clinical metrics** to measure the real trade-off between 
+    **catching every upcoming seizure** and **causing nurse alarm fatigue**.
+    """)
+
+    # Quick at-a-glance Act III KPI strip
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Max Checks / Hour", "240 windows", "30s window, 15s step")
+    m2.metric("Baseline False Burden", "~234–239 / hr", "Alarms on ~98% of windows")
+    m3.metric("Fine-Tuned CNN Burden", "~170 / hr", "-29% fewer false alarms vs LR")
+    m4.metric("Event Sensitivity", "~1.0 (100%)", "Catches advance event warnings")
+
+    st.markdown("---")
+
+    # =========================================================
+    # STEP A: EVENT SENSITIVITY VS FALSE POSITIVE BURDEN (FIGURE 14)
+    # =========================================================
+    st.subheader("Step A: Advance Seizure Warnings vs. False Alarms Per Hour (`Figure 14`)")
+    st.write("""
+    **What we did:** We grouped continuous 30-second window predictions on Siena into seizure events and measured two clinical metrics: 
+    **`event_sensitivity`** (fraction of seizure events preceded by at least one warning) and **`approx_false_positive_burden_per_hour`** 
+    (how many false alarms fire per hour during normal interictal periods).  
+    **Why we did it:** A model that predicts "Seizure!" 240 times an hour technically catches 100% of seizures, but is useless in a hospital. 
+    Event-level evaluation exposes models that cheat via constant false alarms.
     """)
 
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_14_event_level_comparison.png", "Event-level sensitivity vs. false positive burden on Siena")
+        show_image("figure_14_event_level_comparison.png", "Figure 14: Event-level sensitivity (blue) vs. approximate false-positive alarms per hour (orange) on Siena")
     with col2:
-        st.info("""
-        **Act III Takeaway:**  
-        Evaluating at the **seizure-event level** reveals the real-world trade-off between catching impending seizures early and minimizing false alarm fatigue—highlighting why post-processing smoothing and calibration are essential next steps before clinical deployment.
+        st.warning("""
+        **Questions & Answers to Read This Chart:**
+        * **Where are the blue `event_sensitivity` bars?** Look right along the bottom baseline (`0` to `1`): the thin blue slivers sit at **`~1.0` (100%)** for all four models. They look tiny only because they are plotted on the same `0–250` vertical axis as the hourly false-alarm counts.
+        * **Why do `LR` (`~239/hr`) and `RF (0.1)` (`~234/hr`) hit nearly `240`?** With 30-second windows overlapping by 50% (one step every 15 seconds), there are **240 windows in an hour**. Both traditional baselines simply trigger an alarm on almost *every single window*—proving their high sensitivity is an illusion caused by constant false alarms.
+        * **How much better is the 1D-CNN?** The 1D-CNN slashes false-alarm burden by **~29% to 41%**, dropping to **`~142/hr`** (zero-shot) and **`~170/hr`** (fine-tuned) while still warning before seizures occur.
         """)
 
-    st.dataframe(load_table("table_11_event_level_results.csv"), use_container_width=True)
-    st.markdown("👉 **Next step:** Check **6. Full Appendix & Research Map** to see how every chapter maps to the formal dissertation research questions.")
+    with st.expander("📋 View Exact Event-Level Sensitivity & False-Alarm Metrics (Table 11)", expanded=True):
+        st.dataframe(load_table("table_11_event_level_results.csv"), use_container_width=True)
 
+    st.markdown("---")
+
+    # =========================================================
+    # STEP B: HONEST CLINICAL ENGINEERING ASSESSMENT
+    # =========================================================
+    st.subheader("Step B: Key Takeaway & Next Steps for Real-World Deployment")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info("""
+        **Why `~170` Raw Window Alerts/Hour Is Expected (and Honest):**
+        * Each 30-second window is scored independently without temporal smoothing.
+        * Lowering the decision dial to `0.1` prioritizes catching subtle pre-seizure changes (`76.2%` window recall), which naturally allows isolated noisy windows to trigger single-step alerts.
+        """)
+    with c2:
+        st.success("""
+        **How to Bring False Alarms Below `< 1 / Hour` in Production:**
+        * **Persistence Filtering ($k$-of-$n$ rule):** Only sound a bedside alarm when at least *4 out of 6* consecutive windows exceed the risk threshold.
+        * **Refractory Cooldown Period:** Suppress duplicate alerts for 15–30 minutes after an initial warning is raised.
+        """)
+
+    st.markdown("👉 **Next step:** Go to **6. Appendix & Metadata** in the sidebar to view how every chapter maps to our research questions and literature benchmarks.")
+    
 # =========================================================
 # PAGE 6: APPENDIX & METADATA
 # =========================================================
