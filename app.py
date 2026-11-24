@@ -31,14 +31,13 @@ def show_image(filename, caption):
 # Sidebar Navigation & Plain-English Glossary
 # ---------------------------------------------------------
 st.sidebar.title("🧭 Project Storyline")
-page = st.sidebar.radio("Follow the investigation:", [
-    "0. Start Here: The Story",
-    "1. How the Data & Model Work",
-    "2. The Two Hospital Datasets",
+page = st.sidebar.radio("Select Chapter/Section:", [
+    "1. Architecture & Methodology",
+    "2. Dataset Characteristics",
     "3. Act I: Unseen Patients (CHB-MIT)",
     "4. Act II: Unseen Hospital (Siena)",
-    "5. Act III: Real-World Clinical Burden",
-    "6. Full Appendix & Research Map"
+    "5. Act III: Clinical Viability & Burden",
+    "6. Appendix & Metadata"
 ])
 
 st.sidebar.markdown("---")
