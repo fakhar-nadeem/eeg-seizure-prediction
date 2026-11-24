@@ -433,48 +433,102 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
             st.dataframe(load_table("table_07_cnn_summary_statistics.csv"), use_container_width=True)
 
     st.markdown("👉 **Next step:** Go to **4. Act II: Unseen Hospital (Siena)** in the sidebar to see what happens when we deploy this Boston-trained model to an unseen hospital in Italy.")
-    
+
 # =========================================================
-# PAGE 4: CROSS-DATASET TRANSFER (SIENA)
+# PAGE 4: CROSS-DATASET TRANSFER — SIENA (ACT II)
 # =========================================================
 elif page == "4. Act II: Unseen Hospital (Siena)":
-    st.header("4. Act II: What Happens When We Switch Hospitals?")
-    st.write("Even after standardizing channels and sampling rates, different hospitals have different patient demographics, recording hardware, and clinical protocols—a challenge known as **Domain Shift**.")
+    st.header("4. Act II: What Happens at a Completely Different Hospital? (Siena, Italy)")
+    st.write("""
+    Even when two hospitals use the same 16 electrode pairs and 256 Hz sampling rate, real-world clinical deployment faces **domain shift**: 
+    differences in EEG recording hardware, reference-to-bipolar signal conversion, and adult (Siena, Italy) vs. pediatric (CHB-MIT, Boston) brain physiology. 
+    In Act II, we tested whether our Boston-trained models survive this jump—and how much light local calibration is needed to adapt them.
+    """)
 
-    # Zero-Shot Drop
-    st.subheader("Phase 1: Zero-Shot Transfer (No Italian Training Data)")
-    col1, col2 = st.columns([3, 2])
-    with col1:
-        show_image("figure_12_chb_to_siena_drop.png", "AUC drop when moving from CHB-MIT (Boston) to Siena (Italy)")
-    with col2:
-        st.warning("""
-        **The Domain Shift Reality:**  
-        When the Boston-trained CNN is tested cold (*zero-shot*) on Siena patients, recall sits at **53.3%**. 
-        Every model experiences an AUC drop across datasets—proving that lab accuracy on one dataset does not automatically transfer to another clinic.
-        """)
+    # Quick at-a-glance Act II KPI strip
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Zero-Shot CNN AUC", "0.395", "-0.173 drop from Boston (0.568)")
+    m2.metric("Fine-Tuned CNN AUC", "0.589", "+0.194 recovery (beats Boston)")
+    m3.metric("Fine-Tuned Recall (@ 0.1)", "76.2%", "+22.9% vs zero-shot (53.3%)")
+    m4.metric("Fine-Tuned Accuracy (@ 0.1)", "67.9%", "+19.1% vs zero-shot (48.8%)")
 
-    st.dataframe(load_table("table_09_chb_to_siena_transfer_results.csv"), use_container_width=True)
     st.markdown("---")
 
-    # Fine-Tuning Recovery
-    st.subheader("Phase 2: Recovery via Target-Domain Fine-Tuning")
+    # =========================================================
+    # STEP A: ZERO-SHOT CROSS-HOSPITAL DROP (FIGURE 12 & TABLE 9)
+    # =========================================================
+    st.subheader("Step A: Zero-Shot Deployment — Testing Boston Models Directly on Italy (`Figure 12`)")
+    st.write("""
+    **What we did:** We froze our Boston-trained models (**Logistic Regression**, **Random Forest**, and **1D-CNN**) and tested them **zero-shot**—meaning with *zero* Italian training examples—on **3,122 harmonized EEG windows** across 8 Siena patients.  
+    **Why we did it:** To measure how badly a medical AI degrades when shipped "out-of-the-box" to a new hospital without local calibration.
+    """)
+
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_13_finetuning_improvement.png", "Performance jump after fine-tuning on a small Siena subset")
+        show_image("figure_12_chb_to_siena_drop.png", "Figure 12: ROC-AUC comparison when transferring models directly from CHB-MIT (blue) to Siena (orange)")
     with col2:
-        st.success("""
-        **Act II Takeaway (53.3% → 75.0% Recall):**  
-        By fine-tuning the pre-trained CNN on a small subset of Siena patient data and evaluating on held-out Siena patients, **sensitivity jumped from 53.3% to 75.0%**. 
-        Transfer learning allows a hospital to adapt a pre-trained model without needing massive local datasets.
+        st.warning("""
+        **Questions & Answers to Read This Chart:**
+        * **What do the two bars compare?** For each model on the horizontal axis (`LR`, `RF`, `CNN`), the **blue bar (`CHB AUC`)** shows its average score in Boston, and the **orange bar (`Siena AUC`)** shows its zero-shot score in Italy.
+        * **Why did the `CNN` plummet from `0.568` (blue) to `0.395` (orange)?** Because the 1D-CNN reads raw waveform shapes directly. Subtle hardware and adult-vs-pediatric waveform shifts in Siena's recordings threw off its Boston-learned filters (`-0.173` AUC drop).
+        * **Why did `LR` (`0.416` → `0.476`) and `RF` (`0.438` → `0.546`) look flat or slightly higher?** Hand-crafted summary statistics are less sensitive to raw waveform shifts, but as Table 9 shows, they still fail clinically because they trigger constant false alarms on Siena patients.
         """)
 
-    st.dataframe(load_table("table_10_fine_tuning_results.csv"), use_container_width=True)
+    with st.expander("📋 View Full Zero-Shot CHB-MIT → Siena Transfer Metrics (Table 9)", expanded=False):
+        st.dataframe(load_table("table_09_chb_to_siena_transfer_results.csv"), use_container_width=True)
 
-    with st.expander("📈 View Siena Fine-Tuning Loss Curve (Figure 16b)"):
-        show_image("figure_16b_siena_finetune_training_loss.png", "Training loss progression during Siena adaptation")
+    st.markdown("---")
 
-    st.markdown("👉 **Next step:** Go to **5. Act III: Real-World Clinical Burden** to check whether these predictions are practical for a real patient to live with.")
+    # =========================================================
+    # STEP B: TARGET-DOMAIN FINE-TUNING PROCESS (FIGURE 16b)
+    # =========================================================
+    st.subheader("Step B: Fixing Domain Shift — Light Local Fine-Tuning on 4 Siena Patients (`Figure 16b`)")
+    st.write("""
+    **What we did:** Instead of training a new model from scratch, we took the Boston-trained 1D-CNN and **fine-tuned it for just 5 epochs** using a small calibration group of **4 Siena patients (`PN00, PN01, PN03, PN12`)**, while keeping the remaining **4 Siena patients (`PN05, PN09, PN10, PN14` — 2,063 windows)** completely locked away as an unseen test set.  
+    **Why we did it:** In a real hospital rollout, a clinic only has limited local recordings. Splitting strictly *by patient* prevents data leakage and tests whether calibrating on a few local patients generalizes to **brand-new patients** in that same hospital.
+    """)
 
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_16b_siena_finetune_training_loss.png", "Figure 16b: Training-loss progression over 5 fine-tuning epochs on the 4 Siena calibration patients")
+    with col2:
+        st.info("""
+        **Questions & Answers to Read This Chart:**
+        * **Why does Epoch 1 start at a very high loss (`1.669`)?** In Boston (`Figure 16`), training started at `0.805`. Starting at **`1.669`** here is visual proof of **domain shift**: the Boston-trained neural network was initially surprised by Siena's signal amplitude and adult EEG patterns.
+        * **What happens between Epoch 1 and Epoch 5?** Each dot marks one full pass (`Epoch 1` to `5`) over the 4 calibration patients. The error drops steeply to **`0.950` (Epoch 2)** and **`0.623` (Epoch 3)**, then settles smoothly down to **`0.411` (Epoch 5)**.
+        * **Why stop at 5 epochs?** Stopping early lets the network adapt its filters to the Italian hospital's equipment without memorizing or overfitting the 4 calibration patients.
+        """)
+
+    st.markdown("---")
+
+    # =========================================================
+    # STEP C: ZERO-SHOT VS FINE-TUNED RECOVERY (FIGURE 13 & TABLE 10)
+    # =========================================================
+    st.subheader("Step C: Did Fine-Tuning Recover Performance on Unseen Siena Patients? (`Figure 13`)")
+    st.write("""
+    **What we did:** We evaluated the fine-tuned 1D-CNN on the **4 completely unseen held-out Siena patients** and compared it side-by-side against the unadapted zero-shot CNN at both alert thresholds (`0.5` strict vs. `0.1` sensitive).  
+    **Why we did it:** To prove whether brief local domain adaptation restores reliable seizure prediction on brand-new patients in a new hospital.
+    """)
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_13_finetuning_improvement.png", "Figure 13: Zero-shot vs. fine-tuned 1D-CNN performance on Siena at thresholds 0.5 and 0.1")
+    with col2:
+        st.success("""
+        **Questions & Answers to Read This Chart:**
+        * **What do the 4 model groups on the horizontal axis show?** The left two bars show the **zero-shot CNN** (before seeing any Siena data); the right two bars show the **fine-tuned CNN** (after 5 epochs of calibration on 4 patients).
+        * **Look at the red `auc` bars (`0.395` → `0.589`):** Fine-tuning boosts ROC-AUC by **`+0.194`**, completely erasing the cross-hospital drop and outperforming our original Boston LOPO benchmark (`0.568`).
+        * **Why is `CNN CHB→Siena fine-tuned (0.1)` the clear winner?** Combining local fine-tuning with the sensitive `0.1` alert threshold drives massive gains across every metric:
+          * **Recall (green):** Jumps from `53.3%` to **`76.2%`** (`+22.9%` more pre-seizure warnings caught).
+          * **Accuracy (blue):** Jumps from `48.8%` to **`67.9%`** (`+19.1%`).
+          * **F1-Score (orange):** Jumps from `0.611` to **`0.797`** *(note: Siena's test windows contain a higher proportion of pre-ictal segments than Boston, which naturally lifts F1)*.
+        """)
+
+    with st.expander("📋 View Full Zero-Shot vs. Fine-Tuned Comparison Table (Table 10)", expanded=True):
+        st.dataframe(load_table("table_10_fine_tuning_results.csv"), use_container_width=True)
+
+    st.markdown("👉 **Next step:** Go to **5. Act III: Clinical Viability & Burden** in the sidebar to see how these window scores translate into real hospital bedside alarms per hour.")
+    
 # =========================================================
 # PAGE 5: EVENT-LEVEL CLINICAL BURDEN
 # =========================================================
