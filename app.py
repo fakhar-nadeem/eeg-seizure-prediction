@@ -43,82 +43,105 @@ PAGES = [
 st.sidebar.title("🧭 Project Storyline")
 page = st.sidebar.radio("Select Chapter/Section:", PAGES)
 
+# Format: (Abbreviation / Term, Stands For (Full Form), Category, Plain-English Meaning)
 GLOSSARY_TERMS = [
     # --- Brain & Medical ---
-    ("EEG (Electroencephalogram)", "Brain & Medical",
+    ("EEG", "Electroencephalogram", "Brain & Medical",
      "A non-invasive test using small scalp sensors to record the brain's electrical waves over time."),
-    ("Interictal (Label = 0)", "Brain & Medical",
+    ("CHB-MIT", "Children's Hospital Boston – Massachusetts Institute of Technology", "Brain & Medical",
+     "Our primary pediatric scalp EEG dataset recorded in Boston, USA (10 patients preprocessed; 5 valid for LOPO)."),
+    ("Siena", "Siena Scalp EEG Database (University of Siena, Italy)", "Brain & Medical",
+     "Our external adult scalp EEG dataset recorded in Italy (8 patients), used to test cross-hospital transfer."),
+    ("Interictal (Label = 0)", "Between Seizures (Clinical Term)", "Brain & Medical",
      "Normal, everyday brain activity recorded at least 2 hours away from any seizure."),
-    ("Preictal (Label = 1)", "Brain & Medical",
+    ("Preictal (Label = 1)", "Before a Seizure (Clinical Term)", "Brain & Medical",
      "The 5-to-30-minute warning window right before a seizure starts—what the AI tries to detect."),
-    ("Ictal & Post-ictal", "Brain & Medical",
+    ("Ictal & Post-ictal", "During Seizure & After Seizure (Clinical Terms)", "Brain & Medical",
      "Ictal is the active seizure itself; Post-ictal is the recovery period right after. Both are excluded so the model learns early warnings rather than active seizures."),
-    ("CHB-MIT & Siena", "Brain & Medical",
-     "Our two hospital datasets: CHB-MIT is pediatric EEG from Boston, USA; Siena is adult EEG from Siena, Italy."),
 
     # --- Signal & Data Engineering ---
-    ("EDF (European Data Format)", "Signal & Data",
-     "The standard medical file format hospitals use to save raw brainwave recordings."),
-    ("Hz (Hertz / Sampling Rate)", "Signal & Data",
-     "Snapshots per second. 256 Hz means the machine records 256 brainwave readings every second."),
-    ("10-20 Montage (16 Channels)", "Signal & Data",
-     "The standard international map for placing sensors on the scalp. Both hospitals were aligned to the exact same 16 sensor pairs."),
-    ("Bipolar vs. Referential", "Signal & Data",
-     "Bipolar measures the voltage difference between two neighboring sensors (e.g., FP1-F7); Referential measures each sensor against one shared point."),
-    ("Band-pass Filter (0.5–40 Hz)", "Signal & Data",
+    ("EDF", "European Data Format", "Signal & Data",
+     "The standard medical file format hospitals use to store raw brainwave recordings."),
+    ("Hz", "Hertz (Samples / Cycles per Second)", "Signal & Data",
+     "Measurement speed. 256 Hz means the machine records 256 brainwave snapshots every second."),
+    ("10-20 System (16 Channels)", "International 10–20 Electrode Placement System", "Signal & Data",
+     "The standard scalp map for placing EEG sensors (spaced at 10% and 20% intervals). Both hospitals were aligned to the exact same 16 sensor pairs."),
+    ("FP, F, C, P, O, T, Z", "Frontal-Pole, Frontal, Central, Parietal, Occipital, Temporal, Zero (Midline)", "Signal & Data",
+     "The brain region letters in channel names (e.g., FP1-F7 connects the left front-pole sensor to the left frontal sensor)."),
+    ("Bipolar vs. Referential", "Two-Electrode Difference vs. Single-Reference Recording", "Signal & Data",
+     "Bipolar measures voltage difference between two neighboring sensors (e.g., FP1-F7); Referential measures each sensor against one shared point."),
+    ("Band-pass Filter (0.5–40 Hz)", "Frequency Range Filter", "Signal & Data",
      "A digital filter that blocks slow sweat/breathing drift (<0.5 Hz) and wall-outlet electrical hum (>40 Hz), keeping true brainwaves."),
-    ("Windowing & 50% Overlap", "Signal & Data",
+    ("Windowing & 50% Overlap", "Sliding Time-Clip Segmentation", "Signal & Data",
      "Slicing long recordings into 30-second clips, stepping forward every 15 seconds so no transition is missed."),
-    (".npz Caching & OOM", "Signal & Data",
-     "Saving processed clips in compressed disk chunks so 31,147 windows load safely without crashing computer memory (OOM = Out-Of-Memory)."),
+    (".npz & OOM", "NumPy Zipped Archive & Out-Of-Memory", "Signal & Data",
+     "Saving processed clips in compressed .npz disk chunks so 31,147 windows load safely without crashing computer memory (OOM)."),
 
-    # --- AI & Evaluation Metrics ---
-    ("1D-CNN", "AI & Modeling",
-     "1D Convolutional Neural Network—an AI model that slides pattern detectors directly across raw brainwave curves over time."),
-    ("LR & RF (Baselines)", "AI & Modeling",
-     "Logistic Regression & Random Forest—classic ML models trained on 144 summary statistics rather than raw waves."),
-    ("LOPO (Leave-One-Patient-Out)", "AI & Modeling",
+    # --- AI & Modeling ---
+    ("1D-CNN", "One-Dimensional Convolutional Neural Network", "AI & Modeling",
+     "A deep learning model that slides pattern detectors directly across raw brainwave curves over time."),
+    ("ML & AI", "Machine Learning & Artificial Intelligence", "AI & Modeling",
+     "Computer algorithms that learn patterns from historical patient data to make predictions on new recordings."),
+    ("LR & RF", "Logistic Regression & Random Forest", "AI & Modeling",
+     "Classic baseline ML models trained on 144 hand-crafted summary statistics rather than raw brainwave curves."),
+    ("LOPO", "Leave-One-Patient-Out (Cross-Validation)", "AI & Modeling",
      "Training on 4 patients and testing on the 5th completely unseen patient to mimic a brand-new hospital admission."),
-    ("Domain Shift", "AI & Modeling",
-     "The accuracy drop that happens when a model trained on one hospital's equipment/patients is tested on a different hospital."),
-    ("Zero-Shot vs. Fine-Tuning", "AI & Modeling",
+    ("Domain Shift", "Cross-Hospital Distribution Shift", "AI & Modeling",
+     "The accuracy drop that happens when a model trained on one hospital's equipment and age group is tested on a different hospital."),
+    ("Zero-Shot vs. Fine-Tuning", "Uncalibrated Transfer vs. Light Local Calibration", "AI & Modeling",
      "Zero-Shot tests the Boston model on Italy with zero local training; Fine-Tuning adapts it for 5 passes on 4 local Italian patients."),
-    ("Epoch & Training Loss", "AI & Modeling",
-     "One Epoch is one full pass through the training data; Training Loss is the error score (lower means fewer mistakes)."),
-    ("Dropout & Sigmoid", "AI & Modeling",
-     "Dropout randomly disables 30% of neurons during training to prevent memorization; Sigmoid turns the final output into a 0%–100% risk score."),
-    ("Threshold (0.1 vs. 0.5)", "Metrics & Alerts",
-     "The alarm trigger dial: 0.1 triggers an alert at 10% risk (catches more seizures, more false alarms); 0.5 waits until 50% risk."),
-    ("Recall (Sensitivity)", "Metrics & Alerts",
-     "Out of all true pre-seizure warning clips, the percentage the model successfully caught."),
-    ("ROC-AUC", "Metrics & Alerts",
+    ("Epoch & BCEWithLogitsLoss", "Full Training Pass & Binary Cross-Entropy Loss", "AI & Modeling",
+     "One Epoch is one complete pass through the training data; Training Loss is the error score (lower means fewer mistakes)."),
+    ("Dropout & Sigmoid", "Regularization Layer & Probability Activation Function", "AI & Modeling",
+     "Dropout randomly disables 30% of connections during training to prevent memorization; Sigmoid turns the final output into a 0%–100% risk score."),
+
+    # --- Metrics & Alerts ---
+    ("ROC-AUC", "Receiver Operating Characteristic – Area Under the Curve", "Metrics & Alerts",
      "Overall ability to rank warning clips higher than normal clips across all thresholds (0.50 = random coin flip; 1.00 = perfect)."),
-    ("F1-Score", "Metrics & Alerts",
+    ("Recall (Sensitivity)", "True Positive Rate", "Metrics & Alerts",
+     "Out of all true pre-seizure warning clips, the percentage the model successfully caught."),
+    ("F1-Score", "Harmonic Mean of Precision and Recall", "Metrics & Alerts",
      "A single combined score balancing how many warnings are caught (Recall) against false alarms (Precision)."),
-    ("Event Sensitivity & Burden/hr", "Metrics & Alerts",
-     "Event Sensitivity checks if at least one warning fired before a seizure; Burden/hr counts false alarms per hour during normal periods.")
+    ("Std", "Standard Deviation", "Metrics & Alerts",
+     "Measures how much a model's score varies from patient to patient across LOPO folds."),
+    ("Threshold (0.1 vs. 0.5)", "Decision Probability Cutoff", "Metrics & Alerts",
+     "The alarm trigger dial: 0.1 triggers an alert at 10% risk (catches more seizures, more false alarms); 0.5 waits until 50% risk."),
+    ("Event Sensitivity & Burden/hr", "Seizure-Level Detection Rate & False Positives per Hour", "Metrics & Alerts",
+     "Event Sensitivity checks if at least one warning fired before a seizure; Burden/hr counts false alarms per hour during normal periods."),
+
+    # --- Clinical & Future Terms ---
+    ("ICU & EMU", "Intensive Care Unit & Epilepsy Monitoring Unit", "Clinical & Research",
+     "Specialized hospital wards where continuous bedside EEG monitoring is used to watch critically ill or epilepsy patients."),
+    ("ICA & EMG", "Independent Component Analysis & Electromyography", "Clinical & Research",
+     "ICA is a signal-cleaning method used to separate and remove muscle tension (EMG) and eye-blink noise from brainwaves."),
+    ("RNS & VNS", "Responsive Neurostimulation & Vagus Nerve Stimulation", "Clinical & Research",
+     "Implanted medical devices that deliver targeted electrical pulses to stop a seizure before it spreads."),
+    ("RQ (RQ1–RQ3)", "Research Question", "Clinical & Research",
+     "The three core questions guiding this dissertation: unseen-patient generalization (RQ1), cross-hospital transfer (RQ2), and clinical burden (RQ3).")
 ]
 
 st.sidebar.markdown("---")
 with st.sidebar.expander("📖 Plain-English Glossary (Searchable)", expanded=True):
-    search_term = st.text_input("🔍 Filter terms (e.g. AUC, EDF, LOPO):", placeholder="Type to search...").strip().lower()
+    search_term = st.text_input("🔍 Filter terms (e.g. AUC, EDF, LOPO):", placeholder="Type any abbreviation...").strip().lower()
     if search_term:
         matches = [
-            (term, cat, desc) for term, cat, desc in GLOSSARY_TERMS
-            if search_term in term.lower() or search_term in desc.lower() or search_term in cat.lower()
+            item for item in GLOSSARY_TERMS
+            if search_term in item[0].lower()
+            or search_term in item[1].lower()
+            or search_term in item[2].lower()
+            or search_term in item[3].lower()
         ]
         if matches:
-            for term, cat, desc in matches:
-                st.markdown(f"**{term}** *({cat})*  \n{desc}")
+            for term, stands_for, cat, desc in matches:
+                st.markdown(f"**{term}** — *{stands_for}*  \n{desc}")
         else:
-            st.caption("No matching term found. Try 'AUC', 'Hz', 'CNN', or 'Siena'.")
+            st.caption("No matching term found. Try 'AUC', 'EDF', 'Hz', 'CNN', or 'LOPO'.")
     else:
-        st.caption("Showing top terms — type above to search all 24 definitions:")
-        core_terms = {"EEG (Electroencephalogram)", "Interictal (Label = 0)", "Preictal (Label = 1)",
-                      "LOPO (Leave-One-Patient-Out)", "Domain Shift", "ROC-AUC"}
-        for term, _, desc in GLOSSARY_TERMS:
+        st.caption("Showing core abbreviations — type above to search all 32 terms:")
+        core_terms = {"EEG", "CHB-MIT", "1D-CNN", "LOPO", "ROC-AUC", "Domain Shift"}
+        for term, stands_for, _, desc in GLOSSARY_TERMS:
             if term in core_terms:
-                st.markdown(f"**{term}:** {desc}")
+                st.markdown(f"**{term}** (*{stands_for}*): {desc}")
 
 # ---------------------------------------------------------
 # Main Header
@@ -768,5 +791,16 @@ elif page == PAGES[6]:
     st.subheader("Chapter-to-Research-Question Mapping")
     st.dataframe(load_table("table_12_chapter_to_research_question_mapping.csv"), use_container_width=True)
 
-    st.subheader("Literature Comparison Framework")
-    st.dataframe(load_table("table_01_literature_comparison_template.csv"), use_container_width=True)
+    st.markdown("---")
+    st.subheader("Complete Abbreviation & Plain-English Glossary")
+    st.write("A full reference guide showing what every abbreviation stands for and what it means in plain English.")
+
+    glossary_df = pd.DataFrame(
+        GLOSSARY_TERMS,
+        columns=["Abbreviation / Term", "Stands For (Full Form)", "Category", "Plain-English Meaning"]
+    )
+    cat_filter = st.selectbox("Filter by Category:", ["All Categories"] + sorted(glossary_df["Category"].unique().tolist()))
+    if cat_filter != "All Categories":
+        glossary_df = glossary_df[glossary_df["Category"] == cat_filter]
+
+    st.dataframe(glossary_df, use_container_width=True, hide_index=True)
