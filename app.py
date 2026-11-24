@@ -30,25 +30,26 @@ def show_image(filename, caption):
 # ---------------------------------------------------------
 # Sidebar Navigation & Plain-English Glossary
 # ---------------------------------------------------------
-st.sidebar.title("🧭 Project Storyline")
-page = st.sidebar.radio("Select Chapter/Section:", [
+PAGES = [
     "0. Executive Summary & Takeaways",
-    "1. Architecture & Methodology", 
-    "2. Dataset Characteristics", 
-    "3. Act I: Unseen Patients (CHB-MIT)", 
-    "4. Act II: Unseen Hospital (Siena)", 
+    "1. Architecture & Methodology",
+    "2. Dataset Characteristics",
+    "3. Act I: Unseen Patients (CHB-MIT)",
+    "4. Act II: Unseen Hospital (Siena)",
     "5. Act III: Clinical Viability & Burden",
     "6. Appendix & Metadata"
-])
+]
 
+st.sidebar.title("🧭 Project Storyline")
+page = st.sidebar.radio("Select Chapter/Section:", PAGES)
 
 st.sidebar.markdown("---")
 with st.sidebar.expander("📖 Quick Glossary (Plain English)", expanded=True):
     st.markdown("""
-    * **Interictal:** Normal, baseline brain activity far from any seizure.
-    * **Preictal:** The **5 to 30 minute window** right before a seizure starts—our target warning zone.
-    * **LOPO (Leave-One-Patient-Out):** Training on 9 patients and testing on the 10th unseen patient to mimic real hospital deployment.
-    * **Domain Shift:** The accuracy drop that happens when a model trained on one hospital's equipment is tested on another hospital.
+- **Interictal:** Normal, baseline brain activity far from any seizure.
+- **Preictal:** The **5 to 30 minute window** right before a seizure starts—our target warning zone.
+- **LOPO (Leave-One-Patient-Out):** Training on 4 patients and testing on the 5th unseen patient to mimic real hospital deployment.
+- **Domain Shift:** The accuracy drop that happens when a model trained on one hospital's equipment is tested on another hospital.
     """)
 
 # ---------------------------------------------------------
@@ -61,7 +62,7 @@ st.markdown("---")
 # =========================================================
 # PAGE 0: EXECUTIVE SUMMARY & PROJECT TAKEAWAYS
 # =========================================================
-if page == "0. Executive Summary & Takeaways":
+if page == PAGES[0]:
     st.header("Executive Summary: End-to-End Project Overview")
     st.write("""
     This project investigates whether deep learning can predict epileptic seizures **5 to 30 minutes before onset** 
@@ -85,17 +86,17 @@ if page == "0. Executive Summary & Takeaways":
     with c1:
         st.info("""
         **Data Engineering & Harmonization**
-        * **Unified Two Distinct Hospitals:** Combined pediatric scalp EEG from **CHB-MIT (Boston, USA)** and adult scalp EEG from **Siena (Italy)**[cite: 16, 17].
-        * **Signal & Channel Standardization:** Mapped differing electrode setups into a common **16-channel bipolar montage**, resampled all signals to **256 Hz**, and applied a **0.5–40 Hz bandpass filter**[cite: 17].
-        * **Leakage-Free Windowing:** Sliced recordings into **30-second windows (50% overlap)**, labeling **30 to 5 minutes before seizure onset** as *pre-ictal* and enforcing a strict **2-hour exclusion buffer** around seizures for *interictal* (normal) baseline data[cite: 17].
-        * **Memory-Safe Pipeline:** Engineered `.npz` chunk caching to process **31,147 windows** (~236 MB per channel tensor set) without Out-Of-Memory crashes[cite: 16, 17].
+- **Unified Two Distinct Hospitals:** Combined pediatric scalp EEG from **CHB-MIT (Boston, USA)** and adult scalp EEG from **Siena (Italy)**.
+- **Signal & Channel Standardization:** Mapped differing electrode setups into a common **16-channel bipolar montage**, resampled all signals to **256 Hz**, and applied a **0.5–40 Hz bandpass filter**.
+- **Leakage-Free Windowing:** Sliced recordings into **30-second windows (50% overlap)**, labeling **30 to 5 minutes before seizure onset** as *pre-ictal* and enforcing a strict **2-hour exclusion buffer** around seizures for *interictal* (normal) baseline data.
+- **Memory-Safe Pipeline:** Engineered `.npz` chunk caching to process **31,147 windows** (~236 MB per channel tensor set) without Out-Of-Memory crashes.
         """)
     with c2:
         st.info("""
         **Three-Act Validation Strategy**
-        * **Act I — Unseen Patients (CHB-MIT LOPO):** Evaluated Logistic Regression, Random Forest (144 hand-crafted features), and a raw-waveform **1D-CNN** using strict **Leave-One-Patient-Out (LOPO)** cross-validation across all 5 valid seizure patients (`chb01`–`chb05`), plus a same-patient sanity check[cite: 17].
-        * **Act II — Unseen Hospital (CHB-MIT → Siena):** Tested the Boston-trained models **zero-shot** on 8 Italian patients (`3,122` windows), then **fine-tuned the 1D-CNN for 5 epochs** on 4 calibration patients (`PN00, PN01, PN03, PN12`) and tested on **4 completely unseen holdout patients** (`PN05, PN09, PN10, PN14` — `2,063` windows)[cite: 17].
-        * **Act III — Clinical Bedside Viability:** Converted window scores into **event-level seizure sensitivity** and **false-positive alarms per hour**[cite: 17].
+- **Act I — Unseen Patients (CHB-MIT LOPO):** Evaluated Logistic Regression, Random Forest (144 hand-crafted features), and a raw-waveform **1D-CNN** using strict **Leave-One-Patient-Out (LOPO)** cross-validation across all 5 valid seizure patients (`chb01`–`chb05`), plus a same-patient sanity check.
+- **Act II — Unseen Hospital (CHB-MIT → Siena):** Tested the Boston-trained models **zero-shot** on 8 Italian patients (`3,122` windows), then **fine-tuned the 1D-CNN for 5 epochs** on 4 calibration patients (`PN00, PN01, PN03, PN12`) and tested on **4 completely unseen holdout patients** (`PN05, PN09, PN10, PN14` — `2,063` windows).
+- **Act III — Clinical Bedside Viability:** Converted window scores into **event-level seizure sensitivity** and **false-positive alarms per hour**.
         """)
 
     st.markdown("---")
@@ -111,35 +112,35 @@ if page == "0. Executive Summary & Takeaways":
             "Best Model": "Patient-Specific LR",
             "ROC-AUC": "0.990",
             "Recall / Sensitivity": "94.8%",
-            "Key Takeaway": "Upper-bound ceiling when training & testing on the same person[cite: 17]"
+            "Key Takeaway": "Upper-bound ceiling when training & testing on the same person"
         },
         {
             "Experiment Stage": "Act I: Unseen Patients (CHB-MIT LOPO)",
             "Best Model": "1D-CNN (Threshold 0.1)",
             "ROC-AUC": "0.568",
             "Recall / Sensitivity": "54.9%",
-            "Key Takeaway": "Beats LR (0.416 AUC) & RF (0.438 AUC) on brand-new patients[cite: 17]"
+            "Key Takeaway": "Beats LR (0.416 AUC) & RF (0.438 AUC) on brand-new patients"
         },
         {
             "Experiment Stage": "Act IIa: Zero-Shot New Hospital (Siena)",
             "Best Model": "1D-CNN Zero-Shot (0.1)",
             "ROC-AUC": "0.395",
             "Recall / Sensitivity": "53.3%",
-            "Key Takeaway": "-0.173 AUC drop proves severe cross-hospital domain shift[cite: 17]"
+            "Key Takeaway": "-0.173 AUC drop proves severe cross-hospital domain shift"
         },
         {
             "Experiment Stage": "Act IIb: Fine-Tuned New Hospital (Siena)",
             "Best Model": "1D-CNN Fine-Tuned (0.1)",
             "ROC-AUC": "0.589",
             "Recall / Sensitivity": "76.2%",
-            "Key Takeaway": "+0.194 AUC recovery; outperforms original Boston benchmark[cite: 17]"
+            "Key Takeaway": "+0.194 AUC recovery; outperforms original Boston benchmark"
         },
         {
             "Experiment Stage": "Act III: Clinical Event Burden (Siena)",
             "Best Model": "1D-CNN Fine-Tuned (0.1)",
             "ROC-AUC": "0.589",
             "Recall / Sensitivity": "100% Event",
-            "Key Takeaway": "Cuts false alerts to ~170.6/hr vs ~239.4/hr for LR (max 240/hr)[cite: 17]"
+            "Key Takeaway": "Cuts false alerts to ~170.6/hr vs ~239.4/hr for LR (max 240/hr)"
         }
     ])
     st.dataframe(summary_results, use_container_width=True, hide_index=True)
@@ -148,15 +149,15 @@ if page == "0. Executive Summary & Takeaways":
     with col_why1:
         st.warning("""
         **Why Did Performance Drop Across Patients & Hospitals?**
-        * **Unique Brain Signatures (`0.990` vs `0.568` AUC):** Every individual has distinct baseline EEG rhythms. Same-patient splits allow models to memorize personal signatures, whereas unseen-patient LOPO forces true generalization[cite: 17].
-        * **Hardware & Cohort Domain Shift (`0.568` → `0.395` AUC):** Even with identical 16-channel names and 256 Hz sampling rates, Siena uses adult patients and referential-to-bipolar signal conversion—causing uncalibrated Boston filters to misfire[cite: 17].
+- **Unique Brain Signatures (`0.990` vs `0.568` AUC):** Every individual has distinct baseline EEG rhythms. Same-patient splits allow models to memorize personal signatures, whereas unseen-patient LOPO forces true generalization.
+- **Hardware & Cohort Domain Shift (`0.568` → `0.395` AUC):** Even with identical 16-channel names and 256 Hz sampling rates, Siena uses adult patients and referential-to-bipolar signal conversion—causing uncalibrated Boston filters to misfire.
         """)
     with col_why2:
         st.success("""
         **Why Did 1D-CNN + Light Fine-Tuning Recover Performance?**
-        * **Raw Temporal Filters Beat Summary Stats:** Unlike Logistic Regression or Random Forest (which rely on 144 static summary numbers), the 1D-CNN learns wave shapes directly from raw EEG[cite: 17].
-        * **Rapid Target Adaptation (`0.395` → `0.589` AUC):** Fine-tuning for just 5 epochs on 4 local Siena patients realigned the network's convolutional filters to Italian hospital hardware without overfitting[cite: 17].
-        * **Threshold & Window Independence:** Lowering the alert dial to `0.1` catches subtle pre-ictal shifts (`76.2%` recall), while scoring 30s windows independently leaves ~170 raw alerts/hr before smoothing[cite: 17].
+- **Raw Temporal Filters Beat Summary Stats:** Unlike Logistic Regression or Random Forest (which rely on 144 static summary numbers), the 1D-CNN learns wave shapes directly from raw EEG.
+- **Rapid Target Adaptation (`0.395` → `0.589` AUC):** Fine-tuning for just 5 epochs on 4 local Siena patients realigned the network's convolutional filters to Italian hospital hardware without overfitting.
+- **Threshold & Window Independence:** Lowering the alert dial to `0.1` catches subtle pre-ictal shifts (`76.2%` recall), while scoring 30s windows independently leaves ~170 raw alerts/hr before smoothing.
         """)
 
     st.markdown("---")
@@ -166,10 +167,10 @@ if page == "0. Executive Summary & Takeaways":
     # =========================================================
     st.subheader("3. What Do We Understand From This Project in the End?")
     st.success("""
-    1. **'99% Accuracy' Papers Are Misleading for New Patients:** True clinical readiness must be measured via **Leave-One-Patient-Out (LOPO)** and **cross-dataset** testing, not overlapping splits from the same patient[cite: 17].
-    2. **Data Harmonization Alone Does Not Solve Domain Shift:** Standardizing channels and sampling rates is necessary, but physiological and hardware differences across hospitals still degrade zero-shot models[cite: 17].
-    3. **Light Local Calibration Is Practical & Effective:** A pre-trained neural network does not need to be rebuilt from scratch for every hospital—brief fine-tuning on a small local patient cohort restores and even improves predictive power[cite: 17].
-    4. **Window Metrics Are Not Enough for Hospital Deployment:** Evaluating **event-level sensitivity alongside hourly false-alarm burden** is essential to bridge the gap between ML benchmarks and bedside usability[cite: 17].
+1. **'99% Accuracy' Papers Are Misleading for New Patients:** True clinical readiness must be measured via **Leave-One-Patient-Out (LOPO)** and **cross-dataset** testing, not overlapping splits from the same patient.
+2. **Data Harmonization Alone Does Not Solve Domain Shift:** Standardizing channels and sampling rates is necessary, but physiological and hardware differences across hospitals still degrade zero-shot models.
+3. **Light Local Calibration Is Practical & Effective:** A pre-trained neural network does not need to be rebuilt from scratch for every hospital—brief fine-tuning on a small local patient cohort restores and even improves predictive power.
+4. **Window Metrics Are Not Enough for Hospital Deployment:** Evaluating **event-level sensitivity alongside hourly false-alarm burden** is essential to bridge the gap between ML benchmarks and bedside usability.
     """)
 
     st.markdown("---")
@@ -182,29 +183,29 @@ if page == "0. Executive Summary & Takeaways":
     with col_imp:
         st.subheader("4. How This Project Can Be Improved")
         st.markdown("""
-        * **Temporal Alarm Smoothing ($k$-of-$n$ Persistence):** Require at least *4 out of 6 consecutive windows* to exceed the risk threshold plus a 15–30 minute cooldown window—reducing raw alerts (`~170/hr`) to **< 1 false alarm per hour**.
-        * **Advanced Architectures & Domain Adaptation:** Explore hybrid **CNN-Transformer / Conformer** models, adversarial domain adaptation, and per-patient adaptive normalization to improve zero-shot transfer without labels.
-        * **Automated Artifact Rejection:** Integrate Independent Component Analysis (ICA) or wavelet denoising to strip muscle (EMG) and eye-blink artifacts before inference.
-        * **Multi-Center Scale & Uncertainty Estimation:** Train across larger repositories (e.g., Temple University Hospital EEG Corpus) and add conformal prediction to flag noisy/unreliable readings.
+- **Temporal Alarm Smoothing ($k$-of-$n$ Persistence):** Require at least *4 out of 6 consecutive windows* to exceed the risk threshold plus a 15–30 minute cooldown window—reducing raw alerts (`~170/hr`) to **< 1 false alarm per hour**.
+- **Advanced Architectures & Domain Adaptation:** Explore hybrid **CNN-Transformer / Conformer** models, adversarial domain adaptation, and per-patient adaptive normalization to improve zero-shot transfer without labels.
+- **Automated Artifact Rejection:** Integrate Independent Component Analysis (ICA) or wavelet denoising to strip muscle (EMG) and eye-blink artifacts before inference.
+- **Multi-Center Scale & Uncertainty Estimation:** Train across larger repositories (e.g., Temple University Hospital EEG Corpus) and add conformal prediction to flag noisy/unreliable readings.
         """)
 
     with col_app:
         st.subheader("5. Future Real-World Applications")
         st.markdown("""
-        * **Wearable Seizure Warning Headsets:** Pair lightweight, dry-electrode EEG headbands with a smartphone app to give epilepsy patients a **5–30 minute safety alert** to sit down, alert caregivers, or take fast-acting rescue medication.
-        * **Hospital ICU & Epilepsy Monitoring Units (EMUs):** Provide real-time bedside risk dashboards that warn neurologists and nurses ahead of dangerous seizure clusters or status epilepticus.
-        * **Plug-and-Calibrate Hospital Onboarding:** Deploy a foundation seizure-prediction model that hospitals can rapidly calibrate to their local EEG machines using just a handful of local patient recordings.
-        * **Closed-Loop Neuromodulation Devices:** Serve as an intelligent trigger for Responsive Neurostimulation (RNS) or Vagus Nerve Stimulation (VNS) implants to deliver targeted pulses and abort seizures before clinical onset.
+- **Wearable Seizure Warning Headsets:** Pair lightweight, dry-electrode EEG headbands with a smartphone app to give epilepsy patients a **5–30 minute safety alert** to sit down, alert caregivers, or take fast-acting rescue medication.
+- **Hospital ICU & Epilepsy Monitoring Units (EMUs):** Provide real-time bedside risk dashboards that warn neurologists and nurses ahead of dangerous seizure clusters or status epilepticus.
+- **Plug-and-Calibrate Hospital Onboarding:** Deploy a foundation seizure-prediction model that hospitals can rapidly calibrate to their local EEG machines using just a handful of local patient recordings.
+- **Closed-Loop Neuromodulation Devices:** Serve as an intelligent trigger for Responsive Neurostimulation (RNS) or Vagus Nerve Stimulation (VNS) implants to deliver targeted pulses and abort seizures before clinical onset.
         """)
 
     st.markdown("---")
-    st.markdown("👉 **Explore the full technical evidence:** Use the left sidebar to inspect the **Preprocessing Pipeline (Chapter 1)**, **CHB-MIT LOPO Results (Chapter 3)**, **Siena Domain Adaptation (Chapter 4)**, and **Clinical Burden Analysis (Chapter 5)**.")
-    
+    st.markdown("👉 **Next step:** Go to **1. Architecture & Methodology** in the sidebar to see how raw brainwaves are cleaned, windowed, and fed into the 1D-CNN.")
+
 # =========================================================
 # PAGE 1: ARCHITECTURE & METHODOLOGY
 # =========================================================
-elif page == "1. How the Data & Model Work":
-    st.header("1. Turning Raw Brainwaves into Early Warnings")
+elif page == PAGES[1]:
+    st.header("1. Architecture & Methodology: Turning Raw Brainwaves into Early Warnings")
     st.write("Before training any model, raw hospital EEG recordings must be cleaned, sliced into time windows, and standardized so two completely different hospitals speak the same data language.")
 
     # Quick at-a-glance math strip
@@ -229,12 +230,12 @@ elif page == "1. How the Data & Model Work":
     with col2:
         st.info("""
         **How to read this diagram (Left → Right):**
-        * **What do the numbers `0` to `7` mean?** They are an **illustrative timeline** (not drawn to literal minute scale) showing the order of brain states from left to right. There is no vertical axis because this is a single timeline bar.
-        * 🟦 **Blue (`0` to `2`) — Inter-ictal (`Label = 0`):** Normal, everyday brain activity recorded **at least 2 hours away** from any seizure. Kept as our "safe" baseline.
-        * 🟧 **Orange (`2` to `4.5`) — Pre-ictal (`Label = 1`):** The **30 to 5 minute window before a seizure**. This 25-minute stretch is our target early-warning zone.
-        * 🟩 **Green (`4.5` to `5`) — Excluded Buffer:** The final **5 minutes** right before the seizure starts. Thrown away so the model learns *early* warning signs rather than cheating by detecting the seizure starting.
-        * 🟥 **Red (`5` to `5.8`) — Ictal:** The actual seizure happening in real time. Thrown away (detecting an active seizure is too late to warn the patient).
-        * 🟪 **Purple (`5.8` to `7`) — Post-ictal:** Recovery brainwaves right after a seizure ends. Thrown away so tired/recovering brainwaves aren't mistaken for normal baseline.
+- **What do the numbers `0` to `7` mean?** They are an **illustrative timeline** (not drawn to literal minute scale) showing the order of brain states from left to right. There is no vertical axis because this is a single timeline bar.
+- 🟦 **Blue (`0` to `2`) — Inter-ictal (`Label = 0`):** Normal, everyday brain activity recorded **at least 2 hours away** from any seizure. Kept as our "safe" baseline.
+- 🟧 **Orange (`2` to `4.5`) — Pre-ictal (`Label = 1`):** The **30 to 5 minute window before a seizure**. This 25-minute stretch is our target early-warning zone.
+- 🟩 **Green (`4.5` to `5`) — Excluded Buffer:** The final **5 minutes** right before the seizure starts. Thrown away so the model learns *early* warning signs rather than cheating by detecting the seizure starting.
+- 🟥 **Red (`5` to `5.8`) — Ictal:** The actual seizure happening in real time. Thrown away (detecting an active seizure is too late to warn the patient).
+- 🟪 **Purple (`5.8` to `7`) — Post-ictal:** Recovery brainwaves right after a seizure ends. Thrown away so tired/recovering brainwaves aren't mistaken for normal baseline.
         """)
 
     st.markdown("---")
@@ -247,12 +248,12 @@ elif page == "1. How the Data & Model Work":
     with col2:
         st.info("""
         **How to read every part of this diagram:**
-        * **Horizontal Axis (`0` to `200`):** Time moving forward in minutes (illustrative scale).
-        * **Vertical Dashed Line (`x = 180`):** **Seizure Onset**—the exact moment the seizure begins.
-        * **Light-Blue Shaded Band (`x = 120` to `150`):** **Pre-ictal Warning Zone**—a 30-minute illustrative warning window ending well before onset at `180` (in our real pipeline, this zone is **30 to 5 minutes** before onset).
-        * **White Gap (`x = 150` to `180`):** The **excluded buffer zone** right before the seizure—any clip falling here is discarded.
-        * **Why does the horizontal bar change colors?** Each colored block represents one **sliding time window** (`30 seconds` in our real model). Because each new window slides forward by only **half a window (`15 seconds` / 50% overlap)**, each color transition shows where the next overlapping clip begins.
-        * **How clips get labeled:** Clips inside the light-blue shaded zone (olive & cyan segments) are labeled **`1` (Warning)**. Clips far to the left (at least 2 hours away in real data) are labeled **`0` (Normal)**. Clips touching the buffer or dashed seizure line (far right) are dropped.
+- **Horizontal Axis (`0` to `200`):** Time moving forward in minutes (illustrative scale).
+- **Vertical Dashed Line (`x = 180`):** **Seizure Onset**—the exact moment the seizure begins.
+- **Light-Blue Shaded Band (`x = 120` to `150`):** **Pre-ictal Warning Zone**—a 30-minute illustrative warning window ending well before onset at `180` (in our real pipeline, this zone is **30 to 5 minutes** before onset).
+- **White Gap (`x = 150` to `180`):** The **excluded buffer zone** right before the seizure—any clip falling here is discarded.
+- **Why does the horizontal bar change colors?** Each colored block represents one **sliding time window** (`30 seconds` in our real model). Because each new window slides forward by only **half a window (`15 seconds` / 50% overlap)**, each color transition shows where the next overlapping clip begins.
+- **How clips get labeled:** Clips inside the light-blue shaded zone (olive & cyan segments) are labeled **`1` (Warning)**. Clips far to the left (at least 2 hours away in real data) are labeled **`0` (Normal)**. Clips touching the buffer or dashed seizure line (far right) are dropped.
         """)
 
     st.markdown("---")
@@ -271,14 +272,14 @@ elif page == "1. How the Data & Model Work":
     with col2:
         st.info("""
         **How to read this diagram (Follow the arrows Left → Right):**
-        * *(Note: There are no numbers or axes here—each blue box is one processing stage in chronological order.)*
-        * **Box 1 — Raw EDF loading:** Opens the raw hospital brainwave recordings (stored in **EDF**, the standard medical file format for EEG).
-        * **Box 2 — Channel cleaning / harmonisation:** Strips out non-brain sensors (like heart-rate or eye-movement channels) and standardizes electrode names so both hospitals match.
-        * **Box 3 — Resampling to 256 Hz:** Adjusts recording speeds so every file captures exactly **256 brainwave snapshots per second** (Siena was recorded twice as fast at 512 Hz, so we downsample it to match Boston's 256 Hz).
-        * **Box 4 — Band-pass filtering (0.5–40 Hz):** Acts like an audio equalizer—blocks slow baseline drift (`< 0.5 Hz`, like breathing/sweat) and high-frequency electrical hum (`> 40 Hz`, like wall outlets), keeping only true brainwave frequencies.
-        * **Box 5 — 30 s windows with 50% overlap:** Slices the continuous recording into **30-second clips**, stepping forward every **15 seconds** (as shown in Figure 4).
-        * **Box 6 — Label generation:** Tags each 30-second clip as **`1` (Pre-ictal warning)** or **`0` (Inter-ictal normal)** based on its distance from a seizure.
-        * **Box 7 — Chunk caching / feature extraction:** Saves the cleaned clips onto disk as compressed `.npz` chunks (for the 1D-CNN) and extracts 144 summary stats (for the baseline models) so the computer never runs out of memory.
+- *(Note: There are no numbers or axes here—each blue box is one processing stage in chronological order.)*
+- **Box 1 — Raw EDF loading:** Opens the raw hospital brainwave recordings (stored in **EDF**, the standard medical file format for EEG).
+- **Box 2 — Channel cleaning / harmonisation:** Strips out non-brain sensors (like heart-rate or eye-movement channels) and standardizes electrode names so both hospitals match.
+- **Box 3 — Resampling to 256 Hz:** Adjusts recording speeds so every file captures exactly **256 brainwave snapshots per second** (Siena was recorded twice as fast at 512 Hz, so we downsample it to match Boston's 256 Hz).
+- **Box 4 — Band-pass filtering (0.5–40 Hz):** Acts like an audio equalizer—blocks slow baseline drift (`< 0.5 Hz`, like breathing/sweat) and high-frequency electrical hum (`> 40 Hz`, like wall outlets), keeping only true brainwave frequencies.
+- **Box 5 — 30 s windows with 50% overlap:** Slices the continuous recording into **30-second clips**, stepping forward every **15 seconds** (as shown in Figure 4).
+- **Box 6 — Label generation:** Tags each 30-second clip as **`1` (Pre-ictal warning)** or **`0` (Inter-ictal normal)** based on its distance from a seizure.
+- **Box 7 — Chunk caching / feature extraction:** Saves the cleaned clips onto disk as compressed `.npz` chunks (for the 1D-CNN) and extracts 144 summary stats (for the baseline models) so the computer never runs out of memory.
         """)
 
     st.markdown("---")
@@ -291,10 +292,10 @@ elif page == "1. How the Data & Model Work":
     with col2:
         st.info("""
         **How to read the three boxes & inward arrows:**
-        * **Why do both outer arrows point toward the center?** Because two completely different hospital setups (left and right) are being converted into **one shared middle format** so a single AI model can read both.
-        * **Left Box — CHB-MIT (Bipolar channels):** The Boston hospital recorded brainwaves as **pairs** (e.g., `FP1-F7`), measuring the electrical voltage *difference* between two neighboring scalp sensors.
-        * **Right Box — Siena (Referential → bipolar):** The Italian hospital recorded each sensor individually against a single reference point (e.g., `Fp1`, `F7`) and used older naming labels (like `T3` instead of `T7`). Our code renames the sensors and subtracts pairs (`FP1 minus F7`) to reconstruct the exact same paired signals.
-        * **Center Box — Common 16-channel harmonised montage:** A **"montage"** is simply the map of sensor connections on a patient's head. Both datasets end up with the **exact same 16 paired brain channels** in the exact same order.
+- **Why do both outer arrows point toward the center?** Because two completely different hospital setups (left and right) are being converted into **one shared middle format** so a single AI model can read both.
+- **Left Box — CHB-MIT (Bipolar channels):** The Boston hospital recorded brainwaves as **pairs** (e.g., `FP1-F7`), measuring the electrical voltage *difference* between two neighboring scalp sensors.
+- **Right Box — Siena (Referential → bipolar):** The Italian hospital recorded each sensor individually against a single reference point (e.g., `Fp1`, `F7`) and used older naming labels (like `T3` instead of `T7`). Our code renames the sensors and subtracts pairs (`FP1 minus F7`) to reconstruct the exact same paired signals.
+- **Center Box — Common 16-channel harmonised montage:** A **"montage"** is simply the map of sensor connections on a patient's head. Both datasets end up with the **exact same 16 paired brain channels** in the exact same order.
         """)
 
     with st.expander("🔍 View the Exact 16 Harmonized 10-20 Bipolar Channels"):
@@ -314,27 +315,27 @@ elif page == "1. How the Data & Model Work":
     with col2:
         st.success("""
         **How to read this diagram (Follow the arrows Left → Right):**
-        * *(Note: There are no axes here—each blue box shows how one 30-second brainwave clip is transformed step by step into a final warning score.)*
-        * **Box 1 — `Input (16 × 7680)`:** What do these two numbers mean?
-          * **`16`** = The **16 harmonized brain channels** (sensor pairs across the scalp).
-          * **`7680`** = The exact number of brainwave measurements in one 30-second clip (`30 seconds × 256 snapshots per second = 7,680 time steps`).
-        * **Box 2 — `Conv Block 1` (Early Pattern Detector):** Slides small digital filters across the raw waves to spot basic, fast shapes—like sharp spikes, sudden voltage jumps, or rhythmic ripples.
-        * **Box 3 — `Conv Block 2` (Deep Pattern Detector):** Combines those basic shapes into higher-level patterns across multiple brain channels that signal early pre-seizure brain changes.
-        * **Box 4 — `Pooling / Flatten` (Summarizer):** Compresses thousands of time-step readings down into a compact list of the **128 strongest pattern scores** found anywhere in that 30-second window.
-        * **Box 5 — `Dense + Dropout` (Decision Maker & Overfitting Guard):** Weighs all 128 pattern scores together to make a decision. **`Dropout` (30%)** randomly switches off 30% of connections during training so the model cannot simply memorize one patient's quirks.
-        * **Box 6 — `Sigmoid output` (Final Risk Score):** At prediction time, converts the network's raw score into a clean probability between **`0.0` (0% risk — Normal)** and **`1.0` (100% risk — Impending Seizure)**. If this score crosses our alert threshold (`0.5` or `0.1`), an early warning is triggered.
+- *(Note: There are no axes here—each blue box shows how one 30-second brainwave clip is transformed step by step into a final warning score.)*
+- **Box 1 — `Input (16 × 7680)`:** What do these two numbers mean?
+  - **`16`** = The **16 harmonized brain channels** (sensor pairs across the scalp).
+  - **`7680`** = The exact number of brainwave measurements in one 30-second clip (`30 seconds × 256 snapshots per second = 7,680 time steps`).
+- **Box 2 — `Conv Block 1` (Early Pattern Detector):** Slides small digital filters across the raw waves to spot basic, fast shapes—like sharp spikes, sudden voltage jumps, or rhythmic ripples.
+- **Box 3 — `Conv Block 2` (Deep Pattern Detector):** Combines those basic shapes into higher-level patterns across multiple brain channels that signal early pre-seizure brain changes.
+- **Box 4 — `Pooling / Flatten` (Summarizer):** Compresses thousands of time-step readings down into a compact list of the **128 strongest pattern scores** found anywhere in that 30-second window.
+- **Box 5 — `Dense + Dropout` (Decision Maker & Overfitting Guard):** Weighs all 128 pattern scores together to make a decision. **`Dropout` (30%)** randomly switches off 30% of connections during training so the model cannot simply memorize one patient's quirks.
+- **Box 6 — `Sigmoid output` (Final Risk Score):** At prediction time, converts the network's raw score into a clean probability between **`0.0` (0% risk — Normal)** and **`1.0` (100% risk — Impending Seizure)**. If this score crosses our alert threshold (`0.5` or `0.1`), an early warning is triggered.
         """)
 
     with st.expander("📋 View Exact Preprocessing & Labelling Parameters (Table 3)"):
         st.dataframe(load_table("table_03_preprocessing_labelling_parameters.csv"), use_container_width=True)
 
-    st.markdown("👉 **Next step:** Go to **2. The Two Hospital Datasets** in the sidebar to see how much data we collected and why severe class imbalance makes accuracy misleading.")
+    st.markdown("👉 **Next step:** Go to **2. Dataset Characteristics** in the sidebar to see how much data we collected and why severe class imbalance makes accuracy misleading.")
 
 # =========================================================
 # PAGE 2: DATASET CHARACTERISTICS
 # =========================================================
-elif page == "2. The Two Hospital Datasets":
-    st.header("2. Exploring the Data: Boston vs. Italy")
+elif page == PAGES[2]:
+    st.header("2. Dataset Characteristics: Boston vs. Italy")
     st.write("Before judging any AI model's score, we need to look at how much brainwave data was collected from each hospital and how rare pre-seizure warning clips actually are compared to normal brain activity.")
 
     # Quick at-a-glance dataset summary strip
@@ -358,14 +359,14 @@ elif page == "2. The Two Hospital Datasets":
     with col2:
         st.info("""
         **How to read every bar and axis on this chart:**
-        * **Horizontal Axis (`Dataset`):** Two hospital groups—**CHB-MIT** (Boston, left) and **Siena** (Italy, right).
-        * **Vertical Axis (`Count`):** Total count from `0` up to `28,025`.
-        * **What the 4 colored bars mean in each group (Left → Right):**
-          * 🟦 **Blue (`Patients used`):** **`10`** in CHB-MIT vs. **`8`** in Siena. *(Why do these bars look invisible? Because `10` and `8` sit right on the bottom line when plotted on a `0–28,000` scale!)*
-          * 🟧 **Orange (`Windows` — Total clips):** **`28,025`** in CHB-MIT vs. **`3,122`** in Siena. CHB-MIT has nearly **9× more** total data.
-          * 🟩 **Green (`Preictal windows` — Warning clips):** **`1,742`** in CHB-MIT vs. **`2,359`** in Siena.
-          * 🟥 **Red (`Interictal windows` — Normal clips):** **`26,283`** in CHB-MIT vs. **`763`** in Siena.
-        * **Key Visual Contrast:** On **CHB-MIT**, the red normal bar towers over the green warning bar. On **Siena**, the pattern reverses—the green warning bar (`2,359`) is taller than the red normal bar (`763`).
+- **Horizontal Axis (`Dataset`):** Two hospital groups—**CHB-MIT** (Boston, left) and **Siena** (Italy, right).
+- **Vertical Axis (`Count`):** Total count from `0` up to `28,025`.
+- **What the 4 colored bars mean in each group (Left → Right):**
+  - 🟦 **Blue (`Patients used`):** **`10`** in CHB-MIT vs. **`8`** in Siena. *(Why do these bars look invisible? Because `10` and `8` sit right on the bottom line when plotted on a `0–28,000` scale!)*
+  - 🟧 **Orange (`Windows` — Total clips):** **`28,025`** in CHB-MIT vs. **`3,122`** in Siena. CHB-MIT has nearly **9× more** total data.
+  - 🟩 **Green (`Preictal windows` — Warning clips):** **`1,742`** in CHB-MIT vs. **`2,359`** in Siena.
+  - 🟥 **Red (`Interictal windows` — Normal clips):** **`26,283`** in CHB-MIT vs. **`763`** in Siena.
+- **Key Visual Contrast:** On **CHB-MIT**, the red normal bar towers over the green warning bar. On **Siena**, the pattern reverses—the green warning bar (`2,359`) is taller than the red normal bar (`763`).
         """)
 
     with st.expander("📋 View Exact Dataset Characteristics Table (Table 2)", expanded=True):
@@ -385,11 +386,11 @@ elif page == "2. The Two Hospital Datasets":
     with col2:
         st.warning("""
         **How to read every part of this chart:**
-        * **Horizontal Axis:** The two brain states in CHB-MIT—**Interictal** (left) and **Preictal** (right).
-        * **Vertical Axis (`Number of windows`):** Runs from `0` to `25,000+` in steps of `5,000`.
-        * **Left Bar (`Interictal` — Normal):** Reaches just above `25,000`—specifically **`26,283` windows (`93.8%`)**.
-        * **Right Bar (`Preictal` — Warning):** Sits near the bottom well below `5,000`—specifically **`1,742` windows (`6.2%`)**.
-        * **Why this matters for evaluating AI:** With a **15-to-1 imbalance**, a useless model that simply predicts *"No Seizure"* 100% of the time would still score **93.8% accuracy** while missing every seizure! That is why we judge models using **Recall (Sensitivity)** and **ROC-AUC**, and lower our alert threshold to **`0.1`**.
+- **Horizontal Axis:** The two brain states in CHB-MIT—**Interictal** (left) and **Preictal** (right).
+- **Vertical Axis (`Number of windows`):** Runs from `0` to `25,000+` in steps of `5,000`.
+- **Left Bar (`Interictal` — Normal):** Reaches just above `25,000`—specifically **`26,283` windows (`93.8%`)**.
+- **Right Bar (`Preictal` — Warning):** Sits near the bottom well below `5,000`—specifically **`1,742` windows (`6.2%`)**.
+- **Why this matters for evaluating AI:** With a **15-to-1 imbalance**, a useless model that simply predicts *"No Seizure"* 100% of the time would still score **93.8% accuracy** while missing every seizure! That is why we judge models using **Recall (Sensitivity)** and **ROC-AUC**, and lower our alert threshold to **`0.1`**.
         """)
 
     st.markdown("---")
@@ -406,14 +407,14 @@ elif page == "2. The Two Hospital Datasets":
     with col2:
         st.info("""
         **How to read every part of this chart:**
-        * **Horizontal Axis:** All **10 preprocessed CHB-MIT patients**, sorted from the largest recording volume on the left (`chb04`) to the smallest on the right (`chb12`).
-        * **Vertical Axis (`Number of windows`):** Runs from `0` to `3,500` in steps of `500`.
-        * **Highest vs. Lowest Bars:**
-          * **Tallest (`chb04`):** **`3,488`** windows (just under the `3,500` gridline).
-          * **Shortest (`chb12`):** **`1,680`** windows (just above `1,500`, because 3 corrupted files failed the 16-channel check during cleaning).
-        * **Why does Figure 6b show 10 patients while Table 4 below lists 5?**
-          * Patients **`chb01` through `chb05`** (5 patients) all have both normal and pre-seizure warning clips (`204` to `523` preictal windows each), making them valid for **Leave-One-Patient-Out (LOPO)** testing.
-          * Patients **`chb11` through `chb15`** had **`0` valid preictal windows** after applying the strict 30-to-5 minute window rules, so they are excluded from LOPO test folds.
+- **Horizontal Axis:** All **10 preprocessed CHB-MIT patients**, sorted from the largest recording volume on the left (`chb04`) to the smallest on the right (`chb12`).
+- **Vertical Axis (`Number of windows`):** Runs from `0` to `3,500` in steps of `500`.
+- **Highest vs. Lowest Bars:**
+  - **Tallest (`chb04`):** **`3,488`** windows (just under the `3,500` gridline).
+  - **Shortest (`chb12`):** **`1,680`** windows (just above `1,500`, because 3 corrupted files failed the 16-channel check during cleaning).
+- **Why does Figure 6b show 10 patients while Table 4 below lists 5?**
+  - Patients **`chb01` through `chb05`** (5 patients) all have both normal and pre-seizure warning clips (`204` to `523` preictal windows each), making them valid for **Leave-One-Patient-Out (LOPO)** testing.
+  - Patients **`chb11` through `chb15`** had **`0` valid preictal windows** after applying the strict 30-to-5 minute window rules, so they are excluded from LOPO test folds.
         """)
 
     with st.expander("📋 View Valid LOPO Patient Cohort Breakdown (Table 4)", expanded=True):
@@ -424,7 +425,7 @@ elif page == "2. The Two Hospital Datasets":
 # =========================================================
 # PAGE 3: CHB-MIT GENERALIZATION (ACT I)
 # =========================================================
-elif page == "3. Act I: Unseen Patients (CHB-MIT)":
+elif page == PAGES[3]:
     st.header("3. Act I: Can the Model Generalize to Unseen Patients?")
     st.write("To simulate real hospital deployment, we used strict **Leave-One-Patient-Out (LOPO)** cross-validation: the model trains on 4 valid Boston patients and is tested on the **5th patient it has never seen before**, repeated across all 5 patients.")
 
@@ -449,10 +450,10 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
     with col2:
         st.info("""
         **Questions & Answers to Read This Chart:**
-        * **What are the axes?** The horizontal axis (`model`) compares our two baseline algorithms; the vertical axis (`Score`) shows their average score (`0.0` to `0.65`) across all 5 unseen patients.
-        * **Why is Logistic Regression's blue `accuracy_mean` bar (`0.614`) tall while its green `recall_mean` bar (`0.239`) is low?** Because 93.8% of the data is normal, Logistic Regression plays it safe by mostly guessing *"Normal"*—missing **76%** of pre-seizure warning clips.
-        * **What does `(0.1)` mean next to Random Forest?** By default, models only trigger an alert when risk exceeds `50%` (`0.5`). Lowering that trigger to `10%` (`0.1`) makes Random Forest much more sensitive—pushing its green Recall bar up to **`0.504`**, though extra false alarms pull its blue Accuracy bar down to **`0.433`**.
-        * **Why are both red `auc_mean` bars (`0.416` and `0.438`) below `0.50`?** An AUC of `0.50` equals random coin-flipping. Both traditional models struggle to separate pre-seizure from normal brainwaves on brand-new patients because hand-crafted summary stats don't transfer well across different brains.
+- **What are the axes?** The horizontal axis (`model`) compares our two baseline algorithms; the vertical axis (`Score`) shows their average score (`0.0` to `0.65`) across all 5 unseen patients.
+- **Why is Logistic Regression's blue `accuracy_mean` bar (`0.614`) tall while its green `recall_mean` bar (`0.239`) is low?** Because 93.8% of the data is normal, Logistic Regression plays it safe by mostly guessing *"Normal"*—missing **76%** of pre-seizure warning clips.
+- **What does `(0.1)` mean next to Random Forest?** By default, models only trigger an alert when risk exceeds `50%` (`0.5`). Lowering that trigger to `10%` (`0.1`) makes Random Forest much more sensitive—pushing its green Recall bar up to **`0.504`**, though extra false alarms pull its blue Accuracy bar down to **`0.433`**.
+- **Why are both red `auc_mean` bars (`0.416` and `0.438`) below `0.50`?** An AUC of `0.50` equals random coin-flipping. Both traditional models struggle to separate pre-seizure from normal brainwaves on brand-new patients because hand-crafted summary stats don't transfer well across different brains.
         """)
 
     st.markdown("---")
@@ -469,11 +470,11 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
     with col2:
         st.success("""
         **Questions & Answers to Read This Chart:**
-        * **What is the biggest takeaway?** Look at the **red `auc_mean` bars** across all 4 models: the 1D-CNN jumps to **`0.568`**, beating random chance (`0.50`) and outperforming both Logistic Regression (`0.416`) and Random Forest (`0.438`).
-        * **Why are the red AUC bars identical (`0.568`) for `CNN (0.1)` and `CNN (0.5)`?** ROC-AUC measures the model's overall ranking ability across *all* possible thresholds—it stays the same regardless of where you set the alarm trigger.
-        * **Why show both `CNN (0.1)` and `CNN (0.5)`?** They are the exact same trained neural network with two different alert dials:
-          * **`CNN (0.1)` (Sensitive Dial):** Triggers an alarm at `10%` risk—achieving the highest seizure warning **Recall (`0.549` / 54.9%)** and highest **F1 score (`0.192`)** across every model tested.
-          * **`CNN (0.5)` (Strict Dial):** Waits until `50%` risk—achieving the highest overall **Accuracy (`0.710` / 71.0%)**, but catching fewer subtle pre-seizure clips (`0.329` Recall).
+- **What is the biggest takeaway?** Look at the **red `auc_mean` bars** across all 4 models: the 1D-CNN jumps to **`0.568`**, beating random chance (`0.50`) and outperforming both Logistic Regression (`0.416`) and Random Forest (`0.438`).
+- **Why are the red AUC bars identical (`0.568`) for `CNN (0.1)` and `CNN (0.5)`?** ROC-AUC measures the model's overall ranking ability across *all* possible thresholds—it stays the same regardless of where you set the alarm trigger.
+- **Why show both `CNN (0.1)` and `CNN (0.5)`?** They are the exact same trained neural network with two different alert dials:
+  - **`CNN (0.1)` (Sensitive Dial):** Triggers an alarm at `10%` risk—achieving the highest seizure warning **Recall (`0.549` / 54.9%)** and highest **F1 score (`0.192`)** across every model tested.
+  - **`CNN (0.5)` (Strict Dial):** Waits until `50%` risk—achieving the highest overall **Accuracy (`0.710` / 71.0%)**, but catching fewer subtle pre-seizure clips (`0.329` Recall).
         """)
 
     with st.expander("📋 View Exact Mean ± Std Comparison Table Across All 4 Models (Table 8)", expanded=True):
@@ -493,11 +494,11 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
     with col2:
         st.warning("""
         **Questions & Answers to Read This Chart:**
-        * **What is being compared on the horizontal axis (`Setting`)?**
-          * **Left (`Patient-independent CNN (0.1)`):** Tested on a **brand-new patient** excluded from training (our realistic LOPO benchmark).
-          * **Right (`Patient-specific LR`):** Trained on early recordings from a patient and tested on later recordings from that **exact same patient**.
-        * **Why do all 4 bars shoot up near `1.0` on the right (`0.944` Accuracy, `0.842` F1, `0.948` Recall, `0.990` AUC)?** Every human brain has a unique electrical signature. When tested on the same person, even a simple linear model memorizes that patient's personal brainwaves.
-        * **Why does this matter?** A new patient arriving at a hospital does not have hours of pre-recorded seizures to train a personal model. The left bars show the **honest clinical challenge**—and prove why cross-patient generalization is the true benchmark.
+- **What is being compared on the horizontal axis (`Setting`)?**
+  - **Left (`Patient-independent CNN (0.1)`):** Tested on a **brand-new patient** excluded from training (our realistic LOPO benchmark).
+  - **Right (`Patient-specific LR`):** Trained on early recordings from a patient and tested on later recordings from that **exact same patient**.
+- **Why do all 4 bars shoot up near `1.0` on the right (`0.944` Accuracy, `0.842` F1, `0.948` Recall, `0.990` AUC)?** Every human brain has a unique electrical signature. When tested on the same person, even a simple linear model memorizes that patient's personal brainwaves.
+- **Why does this matter?** A new patient arriving at a hospital does not have hours of pre-recorded seizures to train a personal model. The left bars show the **honest clinical challenge**—and prove why cross-patient generalization is the true benchmark.
         """)
 
     st.markdown("---")
@@ -514,9 +515,9 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
     with col2:
         st.info("""
         **Questions & Answers to Read This Chart:**
-        * **What does `Epoch` on the horizontal axis (`1.0` to `5.0`) mean?** One **Epoch** is one complete pass where the 1D-CNN reads through every training window across all 5 Boston patients. The 5 blue dots mark the error score after each full pass (`1, 2, 3, 4, 5`).
-        * **What does `Training loss` on the vertical axis (`0.50` to `0.80`) mean?** It measures how far off the model's predictions are from the true labels (`BCEWithLogitsLoss`)—**lower means fewer mistakes**.
-        * **What does the smooth downward curve prove?** Loss drops sharply from **`~0.805` (Epoch 1)** to **`~0.613` (Epoch 2)** and continues declining smoothly down to **`~0.482` (Epoch 5)**. This confirms stable learning without erratic jumps before saving the model for Act II.
+- **What does `Epoch` on the horizontal axis (`1.0` to `5.0`) mean?** One **Epoch** is one complete pass where the 1D-CNN reads through every training window across all 5 Boston patients. The 5 blue dots mark the error score after each full pass (`1, 2, 3, 4, 5`).
+- **What does `Training loss` on the vertical axis (`0.50` to `0.80`) mean?** It measures how far off the model's predictions are from the true labels (`BCEWithLogitsLoss`)—**lower means fewer mistakes**.
+- **What does the smooth downward curve prove?** Loss drops sharply from **`~0.805` (Epoch 1)** to **`~0.613` (Epoch 2)** and continues declining smoothly down to **`~0.482` (Epoch 5)**. This confirms stable learning without erratic jumps before saving the model for Act II.
         """)
 
     st.subheader("Detailed Per-Patient & Fold Tables")
@@ -536,7 +537,7 @@ elif page == "3. Act I: Unseen Patients (CHB-MIT)":
 # =========================================================
 # PAGE 4: CROSS-DATASET TRANSFER — SIENA (ACT II)
 # =========================================================
-elif page == "4. Act II: Unseen Hospital (Siena)":
+elif page == PAGES[4]:
     st.header("4. Act II: What Happens at a Completely Different Hospital? (Siena, Italy)")
     st.write("""
     Even when two hospitals use the same 16 electrode pairs and 256 Hz sampling rate, real-world clinical deployment faces **domain shift**: 
@@ -568,9 +569,9 @@ elif page == "4. Act II: Unseen Hospital (Siena)":
     with col2:
         st.warning("""
         **Questions & Answers to Read This Chart:**
-        * **What do the two bars compare?** For each model on the horizontal axis (`LR`, `RF`, `CNN`), the **blue bar (`CHB AUC`)** shows its average score in Boston, and the **orange bar (`Siena AUC`)** shows its zero-shot score in Italy.
-        * **Why did the `CNN` plummet from `0.568` (blue) to `0.395` (orange)?** Because the 1D-CNN reads raw waveform shapes directly. Subtle hardware and adult-vs-pediatric waveform shifts in Siena's recordings threw off its Boston-learned filters (`-0.173` AUC drop).
-        * **Why did `LR` (`0.416` → `0.476`) and `RF` (`0.438` → `0.546`) look flat or slightly higher?** Hand-crafted summary statistics are less sensitive to raw waveform shifts, but as Table 9 shows, they still fail clinically because they trigger constant false alarms on Siena patients.
+- **What do the two bars compare?** For each model on the horizontal axis (`LR`, `RF`, `CNN`), the **blue bar (`CHB AUC`)** shows its average score in Boston, and the **orange bar (`Siena AUC`)** shows its zero-shot score in Italy.
+- **Why did the `CNN` plummet from `0.568` (blue) to `0.395` (orange)?** Because the 1D-CNN reads raw waveform shapes directly. Subtle hardware and adult-vs-pediatric waveform shifts in Siena's recordings threw off its Boston-learned filters (`-0.173` AUC drop).
+- **Why did `LR` (`0.416` → `0.476`) and `RF` (`0.438` → `0.546`) look flat or slightly higher?** Hand-crafted summary statistics are less sensitive to raw waveform shifts, but as Table 9 shows, they still fail clinically because they trigger constant false alarms on Siena patients.
         """)
 
     with st.expander("📋 View Full Zero-Shot CHB-MIT → Siena Transfer Metrics (Table 9)", expanded=False):
@@ -593,9 +594,9 @@ elif page == "4. Act II: Unseen Hospital (Siena)":
     with col2:
         st.info("""
         **Questions & Answers to Read This Chart:**
-        * **Why does Epoch 1 start at a very high loss (`1.669`)?** In Boston (`Figure 16`), training started at `0.805`. Starting at **`1.669`** here is visual proof of **domain shift**: the Boston-trained neural network was initially surprised by Siena's signal amplitude and adult EEG patterns.
-        * **What happens between Epoch 1 and Epoch 5?** Each dot marks one full pass (`Epoch 1` to `5`) over the 4 calibration patients. The error drops steeply to **`0.950` (Epoch 2)** and **`0.623` (Epoch 3)**, then settles smoothly down to **`0.411` (Epoch 5)**.
-        * **Why stop at 5 epochs?** Stopping early lets the network adapt its filters to the Italian hospital's equipment without memorizing or overfitting the 4 calibration patients.
+- **Why does Epoch 1 start at a very high loss (`1.669`)?** In Boston (`Figure 16`), training started at `0.805`. Starting at **`1.669`** here is visual proof of **domain shift**: the Boston-trained neural network was initially surprised by Siena's signal amplitude and adult EEG patterns.
+- **What happens between Epoch 1 and Epoch 5?** Each dot marks one full pass (`Epoch 1` to `5`) over the 4 calibration patients. The error drops steeply to **`0.950` (Epoch 2)** and **`0.623` (Epoch 3)**, then settles smoothly down to **`0.411` (Epoch 5)**.
+- **Why stop at 5 epochs?** Stopping early lets the network adapt its filters to the Italian hospital's equipment without memorizing or overfitting the 4 calibration patients.
         """)
 
     st.markdown("---")
@@ -615,12 +616,12 @@ elif page == "4. Act II: Unseen Hospital (Siena)":
     with col2:
         st.success("""
         **Questions & Answers to Read This Chart:**
-        * **What do the 4 model groups on the horizontal axis show?** The left two bars show the **zero-shot CNN** (before seeing any Siena data); the right two bars show the **fine-tuned CNN** (after 5 epochs of calibration on 4 patients).
-        * **Look at the red `auc` bars (`0.395` → `0.589`):** Fine-tuning boosts ROC-AUC by **`+0.194`**, completely erasing the cross-hospital drop and outperforming our original Boston LOPO benchmark (`0.568`).
-        * **Why is `CNN CHB→Siena fine-tuned (0.1)` the clear winner?** Combining local fine-tuning with the sensitive `0.1` alert threshold drives massive gains across every metric:
-          * **Recall (green):** Jumps from `53.3%` to **`76.2%`** (`+22.9%` more pre-seizure warnings caught).
-          * **Accuracy (blue):** Jumps from `48.8%` to **`67.9%`** (`+19.1%`).
-          * **F1-Score (orange):** Jumps from `0.611` to **`0.797`** *(note: Siena's test windows contain a higher proportion of pre-ictal segments than Boston, which naturally lifts F1)*.
+- **What do the 4 model groups on the horizontal axis show?** The left two bars show the **zero-shot CNN** (before seeing any Siena data); the right two bars show the **fine-tuned CNN** (after 5 epochs of calibration on 4 patients).
+- **Look at the red `auc` bars (`0.395` → `0.589`):** Fine-tuning boosts ROC-AUC by **`+0.194`**, completely erasing the cross-hospital drop and outperforming our original Boston LOPO benchmark (`0.568`).
+- **Why is `CNN CHB→Siena fine-tuned (0.1)` the clear winner?** Combining local fine-tuning with the sensitive `0.1` alert threshold drives massive gains across every metric:
+  - **Recall (green):** Jumps from `53.3%` to **`76.2%`** (`+22.9%` more pre-seizure warnings caught).
+  - **Accuracy (blue):** Jumps from `48.8%` to **`67.9%`** (`+19.1%`).
+  - **F1-Score (orange):** Jumps from `0.611` to **`0.797`** *(note: Siena's test windows contain a higher proportion of pre-ictal segments than Boston, which naturally lifts F1)*.
         """)
 
     with st.expander("📋 View Full Zero-Shot vs. Fine-Tuned Comparison Table (Table 10)", expanded=True):
@@ -631,7 +632,7 @@ elif page == "4. Act II: Unseen Hospital (Siena)":
 # =========================================================
 # PAGE 5: CLINICAL EVENT-LEVEL BURDEN (ACT III)
 # =========================================================
-elif page == "5. Act III: Clinical Viability & Burden":
+elif page == PAGES[5]:
     st.header("5. Act III: Is This Ready for a Hospital Bedside? (Clinical Burden Analysis)")
     st.write("""
     High window-level recall does not automatically make a medical device usable in an intensive care unit. 
@@ -662,9 +663,9 @@ elif page == "5. Act III: Clinical Viability & Burden":
     with col2:
         st.warning("""
         **Questions & Answers to Read This Chart:**
-        * **Where are the blue `event_sensitivity` bars?** Look right along the bottom baseline (`0` to `1`): the thin blue slivers sit at **`~1.0` (100%)** for all four models. They look tiny only because they are plotted on the same `0–250` vertical axis as the hourly false-alarm counts.
-        * **Why do `LR` (`~239/hr`) and `RF (0.1)` (`~234/hr`) hit nearly `240`?** With 30-second windows overlapping by 50% (one step every 15 seconds), there are **240 windows in an hour**. Both traditional baselines simply trigger an alarm on almost *every single window*—proving their high sensitivity is an illusion caused by constant false alarms.
-        * **How much better is the 1D-CNN?** The 1D-CNN slashes false-alarm burden by **~29% to 41%**, dropping to **`~142/hr`** (zero-shot) and **`~170/hr`** (fine-tuned) while still warning before seizures occur.
+- **Where are the blue `event_sensitivity` bars?** Look right along the bottom baseline (`0` to `1`): the thin blue slivers sit at **`~1.0` (100%)** for all four models. They look tiny only because they are plotted on the same `0–250` vertical axis as the hourly false-alarm counts.
+- **Why do `LR` (`~239/hr`) and `RF (0.1)` (`~234/hr`) hit nearly `240`?** With 30-second windows overlapping by 50% (one step every 15 seconds), there are **240 windows in an hour**. Both traditional baselines simply trigger an alarm on almost *every single window*—proving their high sensitivity is an illusion caused by constant false alarms.
+- **How much better is the 1D-CNN?** The 1D-CNN slashes false-alarm burden by **~29% to 41%**, dropping to **`~142/hr`** (zero-shot) and **`~170/hr`** (fine-tuned) while still warning before seizures occur.
         """)
 
     with st.expander("📋 View Exact Event-Level Sensitivity & False-Alarm Metrics (Table 11)", expanded=True):
@@ -677,14 +678,14 @@ elif page == "5. Act III: Clinical Viability & Burden":
     with c1:
         st.info("""
         **Why `~170` Raw Window Alerts/Hour Is Expected (and Honest):**
-        * Each 30-second window is scored independently without temporal smoothing.
-        * Lowering the decision dial to `0.1` prioritizes catching subtle pre-seizure changes (`76.2%` window recall), which naturally allows isolated noisy windows to trigger single-step alerts.
+- Each 30-second window is scored independently without temporal smoothing.
+- Lowering the decision dial to `0.1` prioritizes catching subtle pre-seizure changes (`76.2%` window recall), which naturally allows isolated noisy windows to trigger single-step alerts.
         """)
     with c2:
         st.success("""
         **How to Bring False Alarms Below `< 1 / Hour` in Production:**
-        * **Persistence Filtering ($k$-of-$n$ rule):** Only sound a bedside alarm when at least *4 out of 6* consecutive windows exceed the risk threshold.
-        * **Refractory Cooldown Period:** Suppress duplicate alerts for 15–30 minutes after an initial warning is raised.
+- **Persistence Filtering ($k$-of-$n$ rule):** Only sound a bedside alarm when at least *4 out of 6* consecutive windows exceed the risk threshold.
+- **Refractory Cooldown Period:** Suppress duplicate alerts for 15–30 minutes after an initial warning is raised.
         """)
 
     st.markdown("👉 **Next step:** Go to **6. Appendix & Metadata** in the sidebar to view how every chapter maps to our research questions and literature benchmarks.")
@@ -692,8 +693,8 @@ elif page == "5. Act III: Clinical Viability & Burden":
 # =========================================================
 # PAGE 6: APPENDIX & METADATA
 # =========================================================
-elif page == "6. Full Appendix & Research Map":
-    st.header("6. Dissertation Structure & Literature Context")
+elif page == PAGES[6]:
+    st.header("6. Appendix & Metadata: Dissertation Structure & Literature Context")
     st.write("This table maps each section of the dashboard back to the formal Master's dissertation chapters and research questions (RQ1–RQ3).")
 
     st.subheader("Chapter-to-Research-Question Mapping")
