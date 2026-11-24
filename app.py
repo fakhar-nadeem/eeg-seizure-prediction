@@ -28,7 +28,7 @@ def show_image(filename, caption):
         st.info(f"Image '{filename}' not found in assets/ folder.")
 
 # ---------------------------------------------------------
-# Sidebar Navigation & Plain-English Glossary
+# Sidebar Navigation & Searchable Plain-English Glossary
 # ---------------------------------------------------------
 PAGES = [
     "0. Executive Summary & Takeaways",
@@ -43,14 +43,82 @@ PAGES = [
 st.sidebar.title("🧭 Project Storyline")
 page = st.sidebar.radio("Select Chapter/Section:", PAGES)
 
+GLOSSARY_TERMS = [
+    # --- Brain & Medical ---
+    ("EEG (Electroencephalogram)", "Brain & Medical",
+     "A non-invasive test using small scalp sensors to record the brain's electrical waves over time."),
+    ("Interictal (Label = 0)", "Brain & Medical",
+     "Normal, everyday brain activity recorded at least 2 hours away from any seizure."),
+    ("Preictal (Label = 1)", "Brain & Medical",
+     "The 5-to-30-minute warning window right before a seizure starts—what the AI tries to detect."),
+    ("Ictal & Post-ictal", "Brain & Medical",
+     "Ictal is the active seizure itself; Post-ictal is the recovery period right after. Both are excluded so the model learns early warnings rather than active seizures."),
+    ("CHB-MIT & Siena", "Brain & Medical",
+     "Our two hospital datasets: CHB-MIT is pediatric EEG from Boston, USA; Siena is adult EEG from Siena, Italy."),
+
+    # --- Signal & Data Engineering ---
+    ("EDF (European Data Format)", "Signal & Data",
+     "The standard medical file format hospitals use to save raw brainwave recordings."),
+    ("Hz (Hertz / Sampling Rate)", "Signal & Data",
+     "Snapshots per second. 256 Hz means the machine records 256 brainwave readings every second."),
+    ("10-20 Montage (16 Channels)", "Signal & Data",
+     "The standard international map for placing sensors on the scalp. Both hospitals were aligned to the exact same 16 sensor pairs."),
+    ("Bipolar vs. Referential", "Signal & Data",
+     "Bipolar measures the voltage difference between two neighboring sensors (e.g., FP1-F7); Referential measures each sensor against one shared point."),
+    ("Band-pass Filter (0.5–40 Hz)", "Signal & Data",
+     "A digital filter that blocks slow sweat/breathing drift (<0.5 Hz) and wall-outlet electrical hum (>40 Hz), keeping true brainwaves."),
+    ("Windowing & 50% Overlap", "Signal & Data",
+     "Slicing long recordings into 30-second clips, stepping forward every 15 seconds so no transition is missed."),
+    (".npz Caching & OOM", "Signal & Data",
+     "Saving processed clips in compressed disk chunks so 31,147 windows load safely without crashing computer memory (OOM = Out-Of-Memory)."),
+
+    # --- AI & Evaluation Metrics ---
+    ("1D-CNN", "AI & Modeling",
+     "1D Convolutional Neural Network—an AI model that slides pattern detectors directly across raw brainwave curves over time."),
+    ("LR & RF (Baselines)", "AI & Modeling",
+     "Logistic Regression & Random Forest—classic ML models trained on 144 summary statistics rather than raw waves."),
+    ("LOPO (Leave-One-Patient-Out)", "AI & Modeling",
+     "Training on 4 patients and testing on the 5th completely unseen patient to mimic a brand-new hospital admission."),
+    ("Domain Shift", "AI & Modeling",
+     "The accuracy drop that happens when a model trained on one hospital's equipment/patients is tested on a different hospital."),
+    ("Zero-Shot vs. Fine-Tuning", "AI & Modeling",
+     "Zero-Shot tests the Boston model on Italy with zero local training; Fine-Tuning adapts it for 5 passes on 4 local Italian patients."),
+    ("Epoch & Training Loss", "AI & Modeling",
+     "One Epoch is one full pass through the training data; Training Loss is the error score (lower means fewer mistakes)."),
+    ("Dropout & Sigmoid", "AI & Modeling",
+     "Dropout randomly disables 30% of neurons during training to prevent memorization; Sigmoid turns the final output into a 0%–100% risk score."),
+    ("Threshold (0.1 vs. 0.5)", "Metrics & Alerts",
+     "The alarm trigger dial: 0.1 triggers an alert at 10% risk (catches more seizures, more false alarms); 0.5 waits until 50% risk."),
+    ("Recall (Sensitivity)", "Metrics & Alerts",
+     "Out of all true pre-seizure warning clips, the percentage the model successfully caught."),
+    ("ROC-AUC", "Metrics & Alerts",
+     "Overall ability to rank warning clips higher than normal clips across all thresholds (0.50 = random coin flip; 1.00 = perfect)."),
+    ("F1-Score", "Metrics & Alerts",
+     "A single combined score balancing how many warnings are caught (Recall) against false alarms (Precision)."),
+    ("Event Sensitivity & Burden/hr", "Metrics & Alerts",
+     "Event Sensitivity checks if at least one warning fired before a seizure; Burden/hr counts false alarms per hour during normal periods.")
+]
+
 st.sidebar.markdown("---")
-with st.sidebar.expander("📖 Quick Glossary (Plain English)", expanded=True):
-    st.markdown("""
-- **Interictal:** Normal, baseline brain activity far from any seizure.
-- **Preictal:** The **5 to 30 minute window** right before a seizure starts—our target warning zone.
-- **LOPO (Leave-One-Patient-Out):** Training on 4 patients and testing on the 5th unseen patient to mimic real hospital deployment.
-- **Domain Shift:** The accuracy drop that happens when a model trained on one hospital's equipment is tested on another hospital.
-    """)
+with st.sidebar.expander("📖 Plain-English Glossary (Searchable)", expanded=True):
+    search_term = st.text_input("🔍 Filter terms (e.g. AUC, EDF, LOPO):", placeholder="Type to search...").strip().lower()
+    if search_term:
+        matches = [
+            (term, cat, desc) for term, cat, desc in GLOSSARY_TERMS
+            if search_term in term.lower() or search_term in desc.lower() or search_term in cat.lower()
+        ]
+        if matches:
+            for term, cat, desc in matches:
+                st.markdown(f"**{term}** *({cat})*  \n{desc}")
+        else:
+            st.caption("No matching term found. Try 'AUC', 'Hz', 'CNN', or 'Siena'.")
+    else:
+        st.caption("Showing top terms — type above to search all 24 definitions:")
+        core_terms = {"EEG (Electroencephalogram)", "Interictal (Label = 0)", "Preictal (Label = 1)",
+                      "LOPO (Leave-One-Patient-Out)", "Domain Shift", "ROC-AUC"}
+        for term, _, desc in GLOSSARY_TERMS:
+            if term in core_terms:
+                st.markdown(f"**{term}:** {desc}")
 
 # ---------------------------------------------------------
 # Main Header
