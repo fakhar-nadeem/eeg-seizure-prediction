@@ -230,41 +230,98 @@ elif page == "1. How the Data & Model Work":
         st.dataframe(load_table("table_03_preprocessing_labelling_parameters.csv"), use_container_width=True)
 
     st.markdown("👉 **Next step:** Go to **2. The Two Hospital Datasets** in the sidebar to see how much data we collected and why severe class imbalance makes accuracy misleading.")
-    
+
 # =========================================================
 # PAGE 2: DATASET CHARACTERISTICS
 # =========================================================
 elif page == "2. The Two Hospital Datasets":
     st.header("2. Exploring the Data: Boston vs. Italy")
-    st.write("Seizures are rare events compared to normal daily life. Understanding the data balance across patients is critical before judging any model's score.")
+    st.write("Before judging any AI model's score, we need to look at how much brainwave data was collected from each hospital and how rare pre-seizure warning clips actually are compared to normal brain activity.")
+
+    # Quick at-a-glance dataset summary strip
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("CHB-MIT (Boston)", "28,025 Clips", "10 patients (5 LOPO-valid)")
+    m2.metric("Siena (Italy)", "3,122 Clips", "8 patients (cross-hospital)")
+    m3.metric("CHB-MIT Imbalance", "15 : 1 Ratio", "93.8% Normal vs 6.2% Warning")
+    m4.metric("Siena Balance", "1 : 3.1 Ratio", "24.4% Normal vs 75.6% Warning")
+
+    st.markdown("---")
+
+    # =========================================================
+    # SECTION A: BOSTON VS ITALY COMPARISON (FIGURE 2 & TABLE 2)
+    # =========================================================
+    st.subheader("Step A: Comparing Both Hospital Datasets Side-by-Side (`Figure 2`)")
+    st.write("Both datasets were standardized into 30-second clips across 16 identical channels at 256 Hz, but their size and class balance differ dramatically.")
 
     col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_02_chb_vs_siena_comparison.png", "Comparison of patients and window counts across both datasets")
+        show_image("figure_02_chb_vs_siena_comparison.png", "Figure 2: Side-by-side comparison of patient counts and 30-second window counts across CHB-MIT and Siena")
     with col2:
         st.info("""
-        **Key Contrast Between Datasets:**
-        * **CHB-MIT (28,025 windows):** Heavily dominated by normal *interictal* windows (26,283 vs. 1,742 preictal), reflecting real-world rarity.
-        * **Siena (3,122 windows):** Smaller cohort (8 patients) with a higher proportion of preictal clips (2,359 preictal vs. 763 interictal).
+        **How to read every bar and axis on this chart:**
+        * **Horizontal Axis (`Dataset`):** Two hospital groups—**CHB-MIT** (Boston, left) and **Siena** (Italy, right).
+        * **Vertical Axis (`Count`):** Total count from `0` up to `28,025`.
+        * **What the 4 colored bars mean in each group (Left → Right):**
+          * 🟦 **Blue (`Patients used`):** **`10`** in CHB-MIT vs. **`8`** in Siena. *(Why do these bars look invisible? Because `10` and `8` sit right on the bottom line when plotted on a `0–28,000` scale!)*
+          * 🟧 **Orange (`Windows` — Total clips):** **`28,025`** in CHB-MIT vs. **`3,122`** in Siena. CHB-MIT has nearly **9× more** total data.
+          * 🟩 **Green (`Preictal windows` — Warning clips):** **`1,742`** in CHB-MIT vs. **`2,359`** in Siena.
+          * 🟥 **Red (`Interictal windows` — Normal clips):** **`26,283`** in CHB-MIT vs. **`763`** in Siena.
+        * **Key Visual Contrast:** On **CHB-MIT**, the red normal bar towers over the green warning bar. On **Siena**, the pattern reverses—the green warning bar (`2,359`) is taller than the red normal bar (`763`).
         """)
 
-    st.dataframe(load_table("table_02_dataset_characteristics.csv"), use_container_width=True)
+    with st.expander("📋 View Exact Dataset Characteristics Table (Table 2)", expanded=True):
+        st.dataframe(load_table("table_02_dataset_characteristics.csv"), use_container_width=True)
+
     st.markdown("---")
 
-    st.subheader("Patient-by-Patient Breakdown (CHB-MIT)")
-    col1, col2 = st.columns(2)
+    # =========================================================
+    # SECTION B: SEVERE CLASS IMBALANCE IN CHB-MIT (FIGURE 6)
+    # =========================================================
+    st.subheader("Step B: Why 'Accuracy' Can Be Misleading — Severe Class Imbalance (`Figure 6`)")
+    st.write("In real life, patients spend almost all their time in a normal baseline state rather than about to have a seizure. Even after capping normal clips at a maximum of 80 per recording file, CHB-MIT remains heavily skewed.")
+
+    col1, col2 = st.columns([3, 2])
     with col1:
-        show_image("figure_06_chb_label_distribution.png", "Severe class imbalance: ~94% normal vs ~6% preictal")
+        show_image("figure_06_chb_label_distribution.png", "Figure 6: Total Interictal (normal) vs. Preictal (warning) 30-second clips in CHB-MIT")
     with col2:
-        show_image("figure_06b_chb_windows_by_patient.png", "Recording volume varies widely across individual patients")
+        st.warning("""
+        **How to read every part of this chart:**
+        * **Horizontal Axis:** The two brain states in CHB-MIT—**Interictal** (left) and **Preictal** (right).
+        * **Vertical Axis (`Number of windows`):** Runs from `0` to `25,000+` in steps of `5,000`.
+        * **Left Bar (`Interictal` — Normal):** Reaches just above `25,000`—specifically **`26,283` windows (`93.8%`)**.
+        * **Right Bar (`Preictal` — Warning):** Sits near the bottom well below `5,000`—specifically **`1,742` windows (`6.2%`)**.
+        * **Why this matters for evaluating AI:** With a **15-to-1 imbalance**, a useless model that simply predicts *"No Seizure"* 100% of the time would still score **93.8% accuracy** while missing every seizure! That is why we judge models using **Recall (Sensitivity)** and **ROC-AUC**, and lower our alert threshold to **`0.1`**.
+        """)
 
-    st.warning("**Takeaway:** Because only ~6% of CHB-MIT windows are preictal, a lazy model that predicts 'No Seizure' every time would still get 94% accuracy—which is why we evaluate using **Recall (Sensitivity)** and **ROC-AUC**, and tune probability thresholds (e.g., `0.1` instead of `0.5`).")
+    st.markdown("---")
 
-    with st.expander("📋 View Valid CHB-MIT Patient Cohort Summary (Table 4)"):
+    # =========================================================
+    # SECTION C: PATIENT-BY-PATIENT VOLUME (FIGURE 6B & TABLE 4)
+    # =========================================================
+    st.subheader("Step C: Recording Volume Across Individual Patients (`Figure 6b`)")
+    st.write("Hospital recordings vary in length from patient to patient, and not every patient's recordings contain usable pre-seizure warning windows.")
+
+    col1, col2 = st.columns([3, 2])
+    with col1:
+        show_image("figure_06b_chb_windows_by_patient.png", "Figure 6b: Total preprocessed 30-second windows per patient across all 10 CHB-MIT subjects")
+    with col2:
+        st.info("""
+        **How to read every part of this chart:**
+        * **Horizontal Axis:** All **10 preprocessed CHB-MIT patients**, sorted from the largest recording volume on the left (`chb04`) to the smallest on the right (`chb12`).
+        * **Vertical Axis (`Number of windows`):** Runs from `0` to `3,500` in steps of `500`.
+        * **Highest vs. Lowest Bars:**
+          * **Tallest (`chb04`):** **`3,488`** windows (just under the `3,500` gridline).
+          * **Shortest (`chb12`):** **`1,680`** windows (just above `1,500`, because 3 corrupted files failed the 16-channel check during cleaning).
+        * **Why does Figure 6b show 10 patients while Table 4 below lists 5?**
+          * Patients **`chb01` through `chb05`** (5 patients) all have both normal and pre-seizure warning clips (`204` to `523` preictal windows each), making them valid for **Leave-One-Patient-Out (LOPO)** testing.
+          * Patients **`chb11` through `chb15`** had **`0` valid preictal windows** after applying the strict 30-to-5 minute window rules, so they are excluded from LOPO test folds.
+        """)
+
+    with st.expander("📋 View Valid LOPO Patient Cohort Breakdown (Table 4)", expanded=True):
         st.dataframe(load_table("table_04_valid_chb_patient_cohort_summary.csv"), use_container_width=True)
 
-    st.markdown("👉 **Next step:** Go to **3. Act I: Unseen Patients (CHB-MIT)** to see how well the models generalize to brand-new patients.")
-
+    st.markdown("👉 **Next step:** Go to **3. Act I: Unseen Patients (CHB-MIT)** in the sidebar to see how well the 1D-CNN and baseline models perform when tested on a brand-new patient.")
+    
 # =========================================================
 # PAGE 3: CHB-MIT GENERALIZATION
 # =========================================================
